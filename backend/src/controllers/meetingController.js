@@ -77,9 +77,18 @@ exports.getMeetingPrep = async (req, res) => {
 // Get all meetings for the user
 exports.getMeetings = async (req, res) => {
     try {
-        const meetings = await Meeting.find({ userId: req.user._id }).sort({ date: -1 });
+        const { startDate } = req.query;
+        const query = { userId: req.user._id };
+
+        // ADD THIS CHECK to ensure startDate is not undefined
+        if (startDate && !isNaN(new Date(startDate))) {
+            query.date = { $gte: new Date(startDate) };
+        }
+
+        const meetings = await Meeting.find(query).sort({ date: -1 });
         res.status(200).json(meetings);
     } catch (error) {
+        console.error('Error in getMeetings:', error);
         res.status(500).json({ error: "Failed to retrieve meetings." });
     }
 };

@@ -84,5 +84,6 @@ const meetingSchema = new mongoose.Schema({
 meetingSchema.index({ date: -1 });
 meetingSchema.index({ userId: 1 });
 meetingSchema.index({ 'participants.name': 1 });
+meetingSchema.index({ title: 'text', summary: 'text', 'keyPoints.point': 'text', 'participants.name': 'text' });
 
 module.exports = mongoose.model('Meeting', meetingSchema);

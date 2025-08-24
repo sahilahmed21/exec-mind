@@ -1,4 +1,4 @@
-// src/apiService.js
+// frontend/src/apiService.js
 import axios from 'axios';
 
 const apiClient = axios.create({
@@ -36,6 +36,13 @@ export default {
         return apiClient.get(`/meetings/prep/${participantName}`);
     },
 
+
+    // New search function
+    search(query) {
+        return apiClient.get(`/search?q=${encodeURIComponent(query)}`);
+    },
+
+
     // === Scenario 3: Idea Capture ===
     createIdea(payload) {
         if (payload instanceof FormData) {
@@ -46,14 +53,36 @@ export default {
         return apiClient.post('/ideas', payload);
     },
 
-
     // === Scenario 4: Friday Notes ===
     generateNewsletter(data) {
         return apiClient.post('/newsletters/generate', data);
+    },
+    getNewsletters() {
+        return apiClient.get('/newsletters');
+    },
+    getNewsletterById(id) {
+        return apiClient.get(`/newsletters/${id}`);
     },
 
     // === Scenario 5: Send Excerpt ===
     sendBookExcerpt(data) {
         return apiClient.post('/profile/send-excerpt', data);
+    },
+
+    // === Data Fetching for Dynamic UI ===
+    getMeetings(startDate) {
+        return apiClient.get(`/meetings?startDate=${startDate}`);
+    },
+
+    getIdeas(startDate) {
+        return apiClient.get(`/ideas?startDate=${startDate}`);
+    },
+
+    getInsights(startDate) {
+        return apiClient.get(`/insights?startDate=${startDate}`);
+    },
+
+    generateInsights() {
+        return apiClient.post('/insights/generate');
     },
 };

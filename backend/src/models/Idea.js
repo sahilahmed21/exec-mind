@@ -79,5 +79,6 @@ ideaSchema.index({ userId: 1 });
 ideaSchema.index({ category: 1 });
 ideaSchema.index({ priority: -1 });
 ideaSchema.index({ status: 1 });
+ideaSchema.index({ title: 'text', content: 'text', tags: 'text' });
 
 module.exports = mongoose.model('Idea', ideaSchema);

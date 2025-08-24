@@ -50,6 +50,12 @@ const userSchema = new mongoose.Schema({
         title: String,
         content: String,
         tags: [String]
+    }],
+    sentExcerptsHistory: [{
+        query: String,
+        recipient: String,
+        excerptTitle: String,
+        sentAt: { type: Date, default: Date.now }
     }]
 }, {
     timestamps: true

@@ -42,9 +42,18 @@ exports.createIdea = async (req, res) => {
 // Get all ideas for the logged-in user
 exports.getIdeas = async (req, res) => {
     try {
-        const ideas = await Idea.find({ userId: req.user._id }).sort({ createdAt: -1 });
+        const { startDate } = req.query;
+        const query = { userId: req.user._id };
+
+        // ADD THIS CHECK to ensure startDate is not undefined
+        if (startDate && !isNaN(new Date(startDate))) {
+            query.createdAt = { $gte: new Date(startDate) };
+        }
+
+        const ideas = await Idea.find(query).sort({ createdAt: -1 });
         res.status(200).json(ideas);
     } catch (error) {
+        console.error('Error in getIdeas:', error);
         res.status(500).json({ error: 'Failed to fetch ideas' });
     }
 };

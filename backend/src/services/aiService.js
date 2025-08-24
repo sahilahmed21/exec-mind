@@ -1,7 +1,7 @@
-// src/services/aiService.js
+// backend/src/services/aiService.js
 
 const OpenAI = require('openai');
-const { NEWSLETTER_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, EXCERPT_FINDER_PROMPT } = require('../utils/aiPrompts');
+const { NEWSLETTER_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT } = require('../utils/aiPrompts');
 
 class AIService {
     constructor() {
@@ -37,20 +37,24 @@ class AIService {
     async generateNewsletter(context) {
         const { recentMeetings, recentIdeas, manualInputs, user } = context;
 
+        // The prompt is now simpler, as the main instructions are baked into the system prompt.
         const prompt = `
-      **Recent Meetings Summary:**
-      ${recentMeetings.map(m => `- ${m.title}: ${m.summary}`).join('\n')}
+        **Context for this week's email:**
 
-      **Recent Ideas Captured:**
-      ${recentIdeas.map(i => `- ${i.content} (Category: ${i.category})`).join('\n')}
+        **Recent Meetings & Key Takeaways:**
+        ${recentMeetings.map(m => `- ${m.title}: ${m.summary || 'No summary available.'}`).join('\n')}
 
-      **Manual Inputs for this week:**
-      ${manualInputs}
+        **Recent Ideas Captured:**
+        ${recentIdeas.map(i => `- ${i.content}`).join('\n')}
 
-      Based on the provided context, generate the newsletter.
-    `;
+        **Additional Manual Themes/Notes to Include:**
+        ${manualInputs || 'None'}
 
-        const systemPrompt = NEWSLETTER_PROMPT(user.name, user.writingStyle);
+        Based on the provided context, generate the newsletter in Marc Adee's voice.
+        `;
+
+        // The new prompt only needs the user's name.
+        const systemPrompt = NEWSLETTER_PROMPT(user.name);
         return this._callOpenAI(prompt, systemPrompt);
     }
 
@@ -80,6 +84,26 @@ class AIService {
       ${pastMeetings.map(m => `On ${new Date(m.date).toLocaleDateString()}: ${m.summary}\nKey Points: ${m.keyPoints.map(kp => kp.point).join(', ')}`).join('\n\n')}
     `;
         const systemPrompt = MEETING_BRIEF_PROMPT();
+        return this._callOpenAI(prompt, systemPrompt);
+    }
+
+    /**
+     * Generates strategic insights based on a week's worth of data.
+     */
+    async generateWeeklyInsights(context) {
+        const { recentMeetings, recentIdeas } = context;
+
+        const prompt = `
+        **Meeting Summaries from the past week:**
+        ${recentMeetings.map(m => `- ${m.title}: ${m.summary}`).join('\n')}
+
+        **Ideas Captured in the past week:**
+        ${recentIdeas.map(i => `- ${i.content}`).join('\n')}
+
+        Based on the provided context, please generate your strategic analysis.
+        `;
+
+        const systemPrompt = WEEKLY_INSIGHT_GENERATION_PROMPT();
         return this._callOpenAI(prompt, systemPrompt);
     }
 

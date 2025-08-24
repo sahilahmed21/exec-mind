@@ -1,4 +1,4 @@
-// src/controllers/profileController.js
+// backend/src/controllers/profileController.js
 
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
@@ -77,9 +77,25 @@ exports.sendBookExcerpt = async (req, res) => {
         // Send the excerpt via email
         await emailService.sendBookExcerpt(recipient, result.bestMatch.content, context);
 
+        // Create and save the history record
+        const historyRecord = {
+            query,
+            recipient,
+            excerptTitle: result.bestMatch.title,
+            sentAt: new Date()
+        };
+        // If sentExcerptsHistory doesn't exist, initialize it
+        if (!user.sentExcerptsHistory) {
+            user.sentExcerptsHistory = [];
+        }
+        user.sentExcerptsHistory.unshift(historyRecord); // Add to beginning of array
+        await user.save();
+
+
         res.status(200).json({
             message: `Excerpt sent successfully to ${recipient}.`,
-            excerpt: result.bestMatch
+            excerpt: result.bestMatch,
+            historyRecord: user.sentExcerptsHistory[0] // Return the new record
         });
 
     } catch (error) {

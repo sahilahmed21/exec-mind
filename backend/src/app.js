@@ -5,10 +5,12 @@ const cors = require('cors');
 const path = require('path');
 
 // Import routes
+const searchRoutes = require('./routes/search');
 const meetingRoutes = require('./routes/meetings');
 const ideaRoutes = require('./routes/ideas');
 const newsletterRoutes = require('./routes/newsletters');
 const profileRoutes = require('./routes/profile');
+const insightRoutes = require('./routes/insights');
 
 // Import middleware
 const { errorHandler } = require('./middleware/auth');
@@ -33,6 +35,8 @@ app.use('/api/meetings', meetingRoutes);
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/insights', insightRoutes);
+app.use('/api/search', searchRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -53,6 +57,7 @@ app.get('/', (req, res) => {
             '/api/ideas',
             '/api/newsletters',
             '/api/profile',
+            '/api/insights',
             '/api/health'
         ]
     });

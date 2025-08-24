@@ -1,3 +1,4 @@
+// backend/src/models/Newsletter.js
 const mongoose = require('mongoose');
 
 const newsletterSchema = new mongoose.Schema({
@@ -21,7 +22,7 @@ const newsletterSchema = new mongoose.Schema({
         order: Number,
         type: {
             type: String,
-            enum: ['introduction', 'highlights', 'insights', 'people', 'culture', 'closing'],
+            enum: ['introduction', 'highlights', 'insights', 'people', 'culture', 'closing', 'general'],
             default: 'general'
         }
     }],
@@ -70,8 +71,11 @@ const newsletterSchema = new mongoose.Schema({
 
 // Calculate reading time before saving
 newsletterSchema.pre('save', function (next) {
-    if (this.content) {
-        const words = this.content.split(' ').length;
+    if (this.isModified('content') && this.content) {
+        const words = this.content.split(/\s+/).length;
+        if (!this.analytics) {
+            this.analytics = {};
+        }
         this.analytics.wordCount = words;
         this.analytics.readingTime = Math.ceil(words / 200); // assuming 200 words per minute
     }
@@ -83,5 +87,6 @@ newsletterSchema.index({ weekOf: -1 });
 newsletterSchema.index({ userId: 1 });
 newsletterSchema.index({ status: 1 });
 newsletterSchema.index({ publishedAt: -1 });
+newsletterSchema.index({ title: 'text', content: 'text' });
 
 module.exports = mongoose.model('Newsletter', newsletterSchema);
