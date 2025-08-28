@@ -1,16 +1,12 @@
-// src/controllers/meetingController.js
-
 const Meeting = require('../models/Meeting');
 const aiService = require('../services/aiService');
-const emailService = require('../services/emailService');
 const calendarService = require('../services/calendarService');
+const { MEETING_QA_PROMPT } = require('../utils/aiPrompts'); // Import the QA Prompt
 
-// Scenario 1: Process meeting notes/recording after a meeting
+// (Restored) Process meeting notes and save to DB
 exports.createMeetingSummary = async (req, res) => {
     try {
         const { title, participants, date, meetingNotes } = req.body;
-
-        // Use AI to summarize and extract structured data
         const aiAnalysis = await aiService.summarizeAndExtract(meetingNotes);
 
         const newMeeting = new Meeting({
@@ -23,28 +19,11 @@ exports.createMeetingSummary = async (req, res) => {
             actionItems: aiAnalysis.actionItems,
             followUpNeeded: aiAnalysis.followUpNeeded
         });
-
         await newMeeting.save();
 
-        // Handle follow-ups and actions
         if (aiAnalysis.followUpNeeded) {
             await calendarService.scheduleFollowUp(newMeeting, req.user);
-            newMeeting.followUpScheduled = true;
-            await newMeeting.save();
         }
-
-        const actionItemInstructions = aiAnalysis.actionItems
-            .map(item => `- ${item.description} (Assigned to: ${item.assignedTo})`)
-            .join('\n');
-
-        if (actionItemInstructions && req.user.eaEmail) {
-            await emailService.sendToEA(
-                `Action Items from "${title}"`,
-                `Please follow up on these action items:\n${actionItemInstructions}`,
-                'action-items'
-            );
-        }
-
         res.status(201).json(newMeeting);
     } catch (error) {
         console.error('Error creating meeting summary:', error);
@@ -52,43 +31,41 @@ exports.createMeetingSummary = async (req, res) => {
     }
 };
 
-// Scenario 2: Get meeting prep before a meeting
-exports.getMeetingPrep = async (req, res) => {
+// (Restored) Get all meetings from DB
+exports.getMeetings = async (req, res) => {
     try {
-        const { participantName } = req.params;
-
-        const pastMeetings = await Meeting.find({
-            userId: req.user._id,
-            'participants.name': new RegExp(participantName, 'i')
-        }).sort({ date: -1 }).limit(5);
-
-        if (pastMeetings.length === 0) {
-            return res.status(200).json({ message: `No past meetings found with ${participantName}.`, briefing: null });
-        }
-
-        const briefing = await aiService.prepareMeetingBrief(participantName, pastMeetings);
-        res.status(200).json({ message: `Briefing prepared for ${participantName}.`, briefing });
+        const meetings = await Meeting.find({ userId: req.user._id }).sort({ date: -1 });
+        res.status(200).json(meetings);
     } catch (error) {
-        console.error('Error getting meeting prep:', error);
-        res.status(500).json({ error: 'Failed to get meeting prep' });
+        res.status(500).json({ error: "Failed to retrieve meetings." });
     }
 };
 
-// Get all meetings for the user
-exports.getMeetings = async (req, res) => {
+// (New) Ask a question about meetings in the DB
+exports.askAboutMeeting = async (req, res) => {
     try {
-        const { startDate } = req.query;
-        const query = { userId: req.user._id };
-
-        // ADD THIS CHECK to ensure startDate is not undefined
-        if (startDate && !isNaN(new Date(startDate))) {
-            query.date = { $gte: new Date(startDate) };
+        const { query } = req.body;
+        if (!query) {
+            return res.status(400).json({ error: 'A query is required.' });
         }
 
-        const meetings = await Meeting.find(query).sort({ date: -1 });
-        res.status(200).json(meetings);
+        // Use MongoDB's text search to find the most relevant meeting
+        const relevantMeeting = await Meeting.findOne(
+            { userId: req.user._id, $text: { $search: query } },
+            { score: { $meta: "textScore" } }
+        ).sort({ score: { $meta: "textScore" } });
+
+        if (!relevantMeeting) {
+            return res.status(404).json({ answer: "I couldn't find a meeting matching that description in your records." });
+        }
+
+        const context = `Title: ${relevantMeeting.title}\nSummary: ${relevantMeeting.summary}`;
+        const result = await aiService.answerMeetingQuestion({ question: query, context: context });
+
+        res.status(200).json(result);
+
     } catch (error) {
-        console.error('Error in getMeetings:', error);
-        res.status(500).json({ error: "Failed to retrieve meetings." });
+        console.error('Meeting Q&A error:', error);
+        res.status(500).json({ error: 'Failed to answer the question.' });
     }
 };

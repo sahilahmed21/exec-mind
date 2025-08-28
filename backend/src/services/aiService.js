@@ -1,7 +1,7 @@
 // backend/src/services/aiService.js
 
 const OpenAI = require('openai');
-const { NEWSLETTER_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT } = require('../utils/aiPrompts');
+const { NEWSLETTER_PROMPT, MEETING_QA_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT, DOCUMENT_ANALYSIS_PROMPT } = require('../utils/aiPrompts');
 
 class AIService {
     constructor() {
@@ -121,6 +121,23 @@ class AIService {
         return this._callOpenAI(prompt, systemPrompt);
     }
 
+
+    async analyzeDocument({ query, context }) {
+        const prompt = `
+        **User Query:** "${query}"
+
+        **Context Document to Analyze:**
+        ---
+        ${context}
+        ---
+
+        Based on the query, please analyze the provided document and return the structured JSON response.
+        `;
+
+        const systemPrompt = DOCUMENT_ANALYSIS_PROMPT();
+        return this._callOpenAI(prompt, systemPrompt);
+    }
+
     /**
      * MOCK: Transcribes audio to text.
      * In a real app, use a service like AssemblyAI, Deepgram, or OpenAI's Whisper.
@@ -131,6 +148,23 @@ class AIService {
         await new Promise(resolve => setTimeout(resolve, 1500));
         return "This is a transcribed summary of the audio recording. The combined ratio is down, and adding two more underwriters is key. Also, remember the agent event in December.";
     }
+
+    async answerMeetingQuestion({ question, context }) {
+        const prompt = `
+        **User's Question:** "${question}"
+
+        **Meeting Summary Context:**
+        ---
+        ${context}
+        ---
+
+        Please provide a conversational answer based on the context.
+        `;
+        const systemPrompt = MEETING_QA_PROMPT();
+        return this._callOpenAI(prompt, systemPrompt);
+    }
+
+
 }
 
 module.exports = new AIService();

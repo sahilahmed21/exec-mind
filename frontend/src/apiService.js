@@ -70,8 +70,8 @@ export default {
     },
 
     // === Data Fetching for Dynamic UI ===
-    getMeetings(startDate) {
-        return apiClient.get(`/meetings?startDate=${startDate}`);
+    getMeetings() {
+        return apiClient.get('/meetings');
     },
 
     getIdeas(startDate) {
@@ -85,4 +85,16 @@ export default {
     generateInsights() {
         return apiClient.post('/insights/generate');
     },
+
+    analyzeDocument(query) {
+        return apiClient.post('/analyst/query', { query });
+    },
+    getArchivedMeetings() {
+        return apiClient.get('/meetings/archive');
+    },
+    askAboutMeeting(query) {
+        return apiClient.post('/meetings/ask', { query });
+    },
+
+
 };

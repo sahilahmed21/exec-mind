@@ -4,13 +4,14 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const path = require('path');
 
-// Import routes
+// --- All Route Imports ---
 const searchRoutes = require('./routes/search');
-const meetingRoutes = require('./routes/meetings');
+const meetingQARoutes = require('./routes/meetingQA'); // The new meeting routes
 const ideaRoutes = require('./routes/ideas');
 const newsletterRoutes = require('./routes/newsletters');
 const profileRoutes = require('./routes/profile');
 const insightRoutes = require('./routes/insights');
+const analystRoutes = require('./routes/analyst');
 
 // Import middleware
 const { errorHandler } = require('./middleware/auth');
@@ -30,13 +31,14 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/execmind'
     .then(() => console.log('Connected to MongoDB'))
     .catch((error) => console.error('MongoDB connection error:', error));
 
-// Routes
-app.use('/api/meetings', meetingRoutes);
+// --- Register All Routes ---
+app.use('/api/search', searchRoutes);
+app.use('/api/meetings', meetingQARoutes); // Use the correct variable here
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/insights', insightRoutes);
-app.use('/api/search', searchRoutes);
+app.use('/api/analyst', analystRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -58,6 +60,8 @@ app.get('/', (req, res) => {
             '/api/newsletters',
             '/api/profile',
             '/api/insights',
+            '/api/search',
+            '/api/analyst',
             '/api/health'
         ]
     });

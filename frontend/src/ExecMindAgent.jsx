@@ -1,3 +1,4 @@
+// frontend/src/ExecMindAgent.jsx
 import React, { useState, useEffect } from 'react';
 import './ExecMindAgent.css';
 import apiService from './apiService';
@@ -34,7 +35,6 @@ const BriefingIcon = () => (
         <path d="M14 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-4-6h8v2h-8V6zm0 3h8v2h-8V9zm-4 6c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
     </svg>
 );
-
 
 // === Reusable Helper Components ===
 const Loader = () => <div className="loader" />;
@@ -152,8 +152,6 @@ export function ExecMindAgent({ onLogout }) {
     const [currentView, setCurrentView] = useState('dashboard');
     const [userName] = useState('Marc');
     const [selectedDraftId, setSelectedDraftId] = useState(null);
-
-    // Search State
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState(null);
     const [isSearching, setIsSearching] = useState(false);
@@ -184,10 +182,10 @@ export function ExecMindAgent({ onLogout }) {
             case 'fridayNotes': return <FridayNotesGenerator />;
             case 'viewDraft': return <ViewDraft draftId={selectedDraftId} onBack={() => setCurrentView('fridayNotes')} />;
             case 'searchResults': return <SearchResults query={searchQuery} results={searchResults} onViewDraft={handleViewDraft} />;
+            case 'captureIdea': return <CaptureIdeaForm />;
             case 'afterMeeting': return <AfterMeetingForm />;
             case 'beforeMeeting': return <BeforeMeetingForm />;
-            case 'captureIdea': return <CaptureIdeaForm />;
-            case 'sendExcerpt': return <SendExcerptForm />;
+            case 'documentAnalyzer': return <DocumentAnalyzer />;
             default: return <Dashboard setCurrentView={setCurrentView} />;
         }
     };
@@ -288,9 +286,9 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft }) {
         { id: 'dashboard', label: 'Dashboard', icon: <HomeIcon /> },
         { id: 'fridayNotes', label: 'Friday Notes', icon: '📝' },
         { id: 'captureIdea', label: 'Capture Idea', icon: <BulbIcon /> },
-        { id: 'afterMeeting', label: 'Process Meeting', icon: <MeetingIcon /> },
+        { id: 'afterMeeting', label: 'Post Meeting', icon: <MeetingIcon /> },
         { id: 'beforeMeeting', label: 'Before Meeting', icon: <BriefingIcon /> },
-        { id: 'sendExcerpt', label: 'Send Excerpt', icon: <BookIcon /> },
+        { id: 'documentAnalyzer', label: 'Excerpt Q&A', icon: <BookIcon /> },
     ];
 
     return (
@@ -331,7 +329,7 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft }) {
                     <h3 className="sidebar-title">RECENT DRAFTS</h3>
                     <ul className="pending-actions-list">
                         {drafts.length > 0 ? (
-                            drafts.map(draft => (
+                            drafts.slice(0, 6).map(draft => (
                                 <li
                                     key={draft._id}
                                     className="pending-item"
@@ -367,7 +365,6 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft }) {
         </aside>
     );
 }
-
 
 // === View Components ===
 function Dashboard({ setCurrentView }) {
@@ -565,55 +562,150 @@ function FridayNotesGenerator() {
         }
     };
 
+    const handleExportToOutlook = () => {
+        if (!result) return;
+
+        const subject = result.title;
+        let body = '';
+        result.sections.forEach(section => {
+            const content = section.content.replace(/<br \/>/g, '\n').replace(/<br\/>/g, '\n');
+            body += `${section.title}\n`;
+            body += '--------------------\n';
+            body += `${content}\n\n`;
+        });
+
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(body);
+
+        const outlookUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodedSubject}&body=${encodedBody}`;
+        window.open(outlookUrl, '_blank');
+    };
+
     return (
-        <div className="view-container">
+        <div className="view-container full-width">
             <div className="dashboard-header">
                 <h1>Generate "Friday Notes"</h1>
                 <p>Select the key meetings, ideas, and insights from this week to synthesize into your newsletter.</p>
             </div>
-            <div className="friday-notes-container">
-                <h3>Select Sources for this Week's Notes</h3>
-                <div className="sources-list">
-                    {isSourceLoading ? (<p>Loading recent activity...</p>) :
-                        sources.map(source => (
-                            <div key={source._id} className={`source-item ${selectedIds.has(source._id) ? 'selected' : ''}`} onClick={() => toggleSelection(source._id)}>
-                                <div className={`type-indicator ${source.type}`}></div>
-                                <div className="source-details">
-                                    <div className="source-header">
-                                        <span className="source-type">{getSourceTypeLabel(source.type)}</span>
-                                        {source.title && <span className="source-title">{source.title}</span>}
+            <div className="friday-notes-layout-container">
+                {/* --- Left Column: Source Selection --- */}
+                <div className="fn-sources-column">
+                    <h3>Select Sources for this Week's Notes</h3>
+                    <div className="sources-list">
+                        {isSourceLoading ? (<p>Loading recent activity...</p>) :
+                            sources.map(source => (
+                                <div key={source._id} className={`source-item ${selectedIds.has(source._id) ? 'selected' : ''}`} onClick={() => toggleSelection(source._id)}>
+                                    <div className={`type-indicator ${source.type}`}></div>
+                                    <div className="source-details">
+                                        <div className="source-header">
+                                            <span className="source-type">{getSourceTypeLabel(source.type)}</span>
+                                            {source.title && <span className="source-title">{source.title}</span>}
+                                        </div>
+                                        <p className="source-summary">{source.summary || source.content}</p>
                                     </div>
-                                    <p className="source-summary">{source.summary || source.content}</p>
                                 </div>
-                            </div>
-                        ))
-                    }
-                </div>
-                <form onSubmit={handleSubmit} className="generation-form">
-                    <div className="form-group" style={{ position: 'relative' }}>
-                        <label htmlFor="manualInputs">Any additional notes or themes?</label>
-                        <textarea id="manualInputs" className="form-textarea" value={manualInputs} onChange={(e) => setManualInputs(e.target.value)} placeholder="e.g., Shout-out to the tech team for the portal launch..." />
-                        <button
-                            type="button"
-                            className={`mic-button ${isListening ? 'listening' : ''}`}
-                            onClick={isListening ? stopListening : startListening}
-                        >
-                            🎤
-                        </button>
+                            ))
+                        }
                     </div>
-                    <button type="submit" className="btn-primary full-width" disabled={isLoading || selectedIds.size === 0}>
-                        {isLoading ? <Loader /> : `🚀 Generate Draft (${selectedIds.size} selected)`}
-                    </button>
-                </form>
+                </div>
+                {/* --- Right Column: Generation Form and Output --- */}
+                <div className="fn-generation-column">
+                    <form onSubmit={handleSubmit} className="generation-form">
+                        <div className="form-group" style={{ position: 'relative' }}>
+                            <label htmlFor="manualInputs">Any additional notes or themes?</label>
+                            <textarea id="manualInputs" className="form-textarea" value={manualInputs} onChange={(e) => setManualInputs(e.target.value)} placeholder="e.g., Shout-out to the tech team for the portal launch..." />
+                            <button
+                                type="button"
+                                className={`mic-button ${isListening ? 'listening' : ''}`}
+                                onClick={isListening ? stopListening : startListening}
+                            >
+                                🎤
+                            </button>
+                        </div>
+                        <button type="submit" className="btn-primary full-width" disabled={isLoading || selectedIds.size === 0}>
+                            {isLoading ? <Loader /> : `🚀 Generate Draft (${selectedIds.size} selected)`}
+                        </button>
+                    </form>
+
+                    <StateDisplay isLoading={isLoading} error={error} />
+
+                    {result && (
+                        <div className="results-container newsletter-preview" style={{ marginTop: '24px' }}>
+                            <div className="newsletter-header">
+                                <h2>{result.title}</h2>
+                                <button className="btn-secondary" onClick={handleExportToOutlook}>
+                                    <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                                        <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"></path>
+                                    </svg>
+                                    Export to Outlook
+                                </button>
+                            </div>
+                            {result.sections.map((section, index) => (
+                                <div key={index} className="newsletter-section">
+                                    <h4>{section.title}</h4>
+                                    <p dangerouslySetInnerHTML={{ __html: section.content.replace(/\n/g, '<br />') }} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
             </div>
+        </div>
+    );
+}
+
+function DocumentAnalyzer() {
+    // Pre-fill the input with a sample prompt for the demo
+    const [query, setQuery] = useState("Summarize Xerox’s Crum & Forster insurance venture");
+    const [analysisResult, setAnalysisResult] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsLoading(true); setError(''); setAnalysisResult(null);
+        try {
+            const { data } = await apiService.analyzeDocument(query);
+            setAnalysisResult(data);
+        } catch (err) { setError(err.response?.data?.error || 'Failed to get analysis.'); }
+        finally { setIsLoading(false); }
+    };
+
+    return (
+        <div className="view-container">
+            <div className="dashboard-header">
+                <h1>AI Analyst</h1>
+                <p>Ask a question about your knowledge base.</p>
+            </div>
+            <form onSubmit={handleSubmit} className="standard-form">
+                <div className="form-group">
+                    <label>Your Question</label>
+                    <input
+                        type="text"
+                        className="form-textarea" // Use same style as text area
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                    />
+                </div>
+                <button type="submit" className="btn-primary" disabled={isLoading}>
+                    {isLoading ? <Loader /> : '🧠 Get Analysis'}
+                </button>
+            </form>
+
             <StateDisplay isLoading={isLoading} error={error} />
-            {result && (
-                <div className="results-container newsletter-preview">
-                    <h2>{result.title}</h2>
-                    {result.sections.map((section, index) => (
-                        <div key={index} className="newsletter-section">
+
+            {analysisResult && (
+                <div className="results-container analysis-result">
+                    <h2>Analysis Result</h2>
+                    <p className="analysis-summary">{analysisResult.summary}</p>
+                    {analysisResult.sections.map((section, index) => (
+                        <div key={index} className="analysis-section">
                             <h4>{section.title}</h4>
-                            <p dangerouslySetInnerHTML={{ __html: section.content.replace(/\n/g, '<br />') }} />
+                            <ul>
+                                {section.points.map((point, pIndex) => (
+                                    <li key={pIndex}>{point}</li>
+                                ))}
+                            </ul>
                         </div>
                     ))}
                 </div>
@@ -630,24 +722,22 @@ function AfterMeetingForm() {
     const [recentMeetings, setRecentMeetings] = useState([]);
     const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
 
+    const fetchMeetings = async () => {
+        try {
+            const { data } = await apiService.getMeetings();
+            setRecentMeetings(data);
+        } catch (err) {
+            console.error("Failed to fetch recent meetings", err);
+        }
+    };
+
     useEffect(() => {
-        const fetchMeetings = async () => {
-            try {
-                const { data } = await apiService.getMeetings();
-                setRecentMeetings(data);
-            } catch (err) {
-                console.error("Failed to fetch recent meetings", err);
-            }
-        };
         fetchMeetings();
     }, []);
 
     useEffect(() => {
         if (!isListening && transcript) {
-            setFormData(prev => ({
-                ...prev,
-                meetingNotes: prev.meetingNotes ? `${prev.meetingNotes} ${transcript}` : transcript
-            }));
+            setFormData(prev => ({ ...prev, meetingNotes: prev.meetingNotes ? `${prev.meetingNotes} ${transcript}` : transcript }));
         }
     }, [transcript, isListening]);
 
@@ -666,10 +756,7 @@ function AfterMeetingForm() {
 
     return (
         <div className="view-container">
-            <div className="dashboard-header">
-                <h1>After the Meeting</h1>
-                <p>Process notes for a concise summary and action items.</p>
-            </div>
+            <div className="dashboard-header"><h1>After the Meeting</h1><p>Process notes to create a concise, searchable summary.</p></div>
             <form onSubmit={handleSubmit} className="standard-form">
                 <div className="form-grid">
                     <div className="form-group">
@@ -684,74 +771,64 @@ function AfterMeetingForm() {
                 <div className="form-group" style={{ position: 'relative' }}>
                     <label>Meeting Notes or Transcript</label>
                     <textarea value={formData.meetingNotes} onChange={(e) => setFormData({ ...formData, meetingNotes: e.target.value })} required />
-                    <button
-                        type="button"
-                        className={`mic-button ${isListening ? 'listening' : ''}`}
-                        onClick={isListening ? stopListening : startListening}
-                    >
-                        🎤
-                    </button>
+                    <button type="button" className={`mic-button ${isListening ? 'listening' : ''}`} onClick={isListening ? stopListening : startListening}>🎤</button>
                 </div>
                 <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : '✨ Process Meeting'}</button>
             </form>
             <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
             <div className="recent-ideas-container">
                 <h3 className="sidebar-title">RECENTLY PROCESSED</h3>
-                <div className="sources-list">
-                    {recentMeetings.slice(0, 5).map(meeting => (
-                        <div key={meeting._id} className="source-item">
-                            <div className="type-indicator meeting"></div>
-                            <div className="source-details">
-                                <div className="source-header">
-                                    <span className="source-title">{meeting.title}</span>
-                                </div>
-                                <p className="source-summary">{meeting.summary}</p>
-                                <div className="insight-meta" style={{ marginTop: '8px' }}>
-                                    <span>{new Date(meeting.date).toLocaleDateString()}</span>
-                                </div>
+                <div className="sources-list">{recentMeetings.slice(0, 5).map(meeting => (
+                    <div key={meeting._id} className="source-item">
+                        <div className="type-indicator meeting"></div>
+                        <div className="source-details">
+                            <div className="source-header">
+                                <span className="source-title">{meeting.title}</span>
+                            </div>
+                            <p className="source-summary">{meeting.summary}</p>
+                            <div className="insight-meta" style={{ marginTop: '8px' }}>
+                                <span>{new Date(meeting.date).toLocaleDateString()}</span>
                             </div>
                         </div>
-                    ))}
-                </div>
+                    </div>
+                ))}</div>
             </div>
         </div>
     );
 }
 
 function BeforeMeetingForm() {
-    const [participantName, setParticipantName] = useState('');
-    const [result, setResult] = useState(null);
+    const [query, setQuery] = useState("What was decided in the product roadmap strategy session?");
+    const [answer, setAnswer] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true); setError(''); setResult(null);
+        setIsLoading(true); setError(''); setAnswer('');
         try {
-            const { data } = await apiService.getMeetingPrep(participantName);
-            setResult(data);
-        } catch (err) { setError(err.response?.data?.error || 'Failed to get briefing.'); }
+            const { data } = await apiService.askAboutMeeting(query);
+            setAnswer(data.answer);
+        } catch (err) {
+            const errorMessage = err.response?.data?.answer || err.response?.data?.error || 'Failed to get an answer.';
+            setError(errorMessage);
+        }
         finally { setIsLoading(false); }
     };
 
     return (
         <div className="view-container">
-            <div className="dashboard-header">
-                <h1>Before the Meeting</h1>
-                <p>Get a strategic briefing on any individual.</p>
-            </div>
+            <div className="dashboard-header"><h1>Before the Meeting</h1><p>Ask the agent for a summary of any past meeting.</p></div>
             <form onSubmit={handleSubmit} className="standard-form">
                 <div className="form-group">
-                    <label>Participant's Full Name</label>
-                    <input type="text" value={participantName} onChange={(e) => setParticipantName(e.target.value)} required />
+                    <label>Your Question</label>
+                    <input type="text" className="form-textarea" value={query} onChange={(e) => setQuery(e.target.value)} />
                 </div>
-                <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : '🔍 Get Briefing'}</button>
+                <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : '❓ Ask Agent'}</button>
             </form>
             <StateDisplay isLoading={isLoading} error={error} />
-            {result && result.briefing && (
-                <div className="results-container">
-                    {/* Results rendering */}
-                </div>
+            {answer && (
+                <div className="results-container"><p className="analysis-summary">{answer}</p></div>
             )}
         </div>
     );
@@ -834,123 +911,6 @@ function CaptureIdeaForm() {
                             </div>
                         </div>
                     ))}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-// === UPDATED COMPONENT ===
-function SendExcerptForm() {
-    const [formData, setFormData] = useState({ query: '', recipient: '', context: '' });
-    const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const [successMessage, setSuccessMessage] = useState('');
-    const [excerptHistory, setExcerptHistory] = useState([]); // State for history
-
-    // Fetch user profile to get excerpt history on component mount
-    useEffect(() => {
-        const fetchHistory = async () => {
-            try {
-                // Assumes an apiService.getProfile() method exists
-                const { data: user } = await apiService.getProfile();
-                if (user && user.sentExcerptsHistory) {
-                    // Sort by date descending before setting
-                    const sortedHistory = user.sentExcerptsHistory.sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
-                    setExcerptHistory(sortedHistory);
-                }
-            } catch (err) {
-                console.error("Could not load excerpt history", err);
-            }
-        };
-        fetchHistory();
-    }, []);
-
-    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-
-    useEffect(() => {
-        if (!isListening && transcript) {
-            setFormData(prev => ({
-                ...prev,
-                context: prev.context ? `${prev.context} ${transcript}` : transcript
-            }));
-        }
-    }, [transcript, isListening]);
-
-    const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setIsLoading(true); setError(''); setSuccessMessage('');
-        try {
-            const { data } = await apiService.sendBookExcerpt(formData);
-            setSuccessMessage(data.message);
-            setFormData({ query: '', recipient: '', context: '' }); // Clear form
-
-            // Optimistically add the new record to the history list
-            if (data.historyRecord) {
-                setExcerptHistory(prev => [data.historyRecord, ...prev]);
-            }
-
-        } catch (err) { setError(err.response?.data?.error || 'Failed to send excerpt.'); }
-        finally { setIsLoading(false); }
-    };
-
-    return (
-        <div className="view-container">
-            <div className="dashboard-header">
-                <h1>Send Book Excerpt</h1>
-                <p>Instantly find and email a relevant passage from your book.</p>
-            </div>
-            <form onSubmit={handleSubmit} className="standard-form">
-                <div className="form-grid">
-                    <div className="form-group">
-                        <label>What is the excerpt about?</label>
-                        <input type="text" name="query" value={formData.query} onChange={handleChange} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Recipient's Email</label>
-                        <input type="email" name="recipient" value={formData.recipient} onChange={handleChange} required />
-                    </div>
-                </div>
-                <div className="form-group" style={{ position: 'relative' }}>
-                    <label>Context for the email (optional)</label>
-                    <textarea name="context" value={formData.context} onChange={handleChange} />
-                    <button
-                        type="button"
-                        className={`mic-button ${isListening ? 'listening' : ''}`}
-                        onClick={isListening ? stopListening : startListening}
-                    >
-                        🎤
-                    </button>
-                </div>
-                <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : '✉️ Find & Send'}</button>
-            </form>
-            <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
-
-            {/* Section to Display Sent History */}
-            <div className="recent-ideas-container">
-                <h3 className="sidebar-title">SEND HISTORY</h3>
-                <div className="sources-list">
-                    {excerptHistory.length > 0 ? (
-                        excerptHistory.slice(0, 5).map(item => (
-                            <div key={item._id} className="source-item">
-                                <div className="source-details">
-                                    <div className="source-header">
-                                        <span className="source-title">To: {item.recipient}</span>
-                                    </div>
-                                    <p className="source-summary">"{item.excerptTitle}"</p>
-                                    <div className="insight-meta" style={{ marginTop: '8px' }}>
-                                        <span>{new Date(item.sentAt).toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        ))
-                    ) : (
-                        <div className="pending-details" style={{ padding: '10px' }}>
-                            <div className="pending-meta">No excerpts sent yet.</div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

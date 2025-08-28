@@ -100,6 +100,31 @@ You must generate a JSON object with the following structure:
 Do not include any text outside of the JSON object.
 `;
 
+const DOCUMENT_ANALYSIS_PROMPT = () => `
+You are an expert business analyst and historian. Your task is to answer a specific query based ONLY on the provided context document.
+- Analyze the document thoroughly.
+- Synthesize the information to provide a detailed, structured answer.
+- Do not use any external knowledge. Your response must be derived exclusively from the text.
+- The response must be a single JSON object.
+
+The JSON object must have the following structure:
+{
+  "summary": "A concise, 1-2 paragraph summary that directly answers the user's query.",
+  "sections": [
+    {
+      "title": "A relevant sub-topic or heading based on the query.",
+      "points": [
+        "A detailed bullet point summarizing a key fact or event from the document.",
+        "Another detailed bullet point with supporting information."
+      ]
+    }
+  ]
+}
+
+Do not include any text outside of the JSON object.
+`;
+
+
 const MEETING_BRIEF_PROMPT = () => `
 You are an executive assistant AI creating a pre-meeting briefing document.
 Your goal is to synthesize past interactions to prepare the executive for the upcoming meeting.
@@ -150,6 +175,13 @@ You must generate a JSON object containing a single key "insights", which is an 
 }
 Do not include any text outside of the main JSON object. The source of these insights is an internal synthesis, so do not invent external sources.
 `;
+const MEETING_QA_PROMPT = () => `
+You are a highly efficient executive assistant AI. A user is asking a question about a past meeting.
+Your task is to answer their question conversationally and concisely, using ONLY the information provided in the meeting summary context.
+Do not add any information that is not in the context. Synthesize the key points into a polished, easy-to-read paragraph.
+The final output must be a single JSON object with one key: "answer".
+`;
+
 
 
 module.exports = {
@@ -159,4 +191,6 @@ module.exports = {
   MEETING_BRIEF_PROMPT,
   EXCERPT_FINDER_PROMPT,
   WEEKLY_INSIGHT_GENERATION_PROMPT,
+  DOCUMENT_ANALYSIS_PROMPT,
+  MEETING_QA_PROMPT,
 };
