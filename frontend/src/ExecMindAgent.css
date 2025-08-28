@@ -1316,3 +1316,61 @@ select.form-textarea {
     max-width: none;
     margin: 0;
 }
+
+/* Add to the end of frontend/src/ExecMindAgent.css */
+
+.stats-grid.dashboard-grid-override {
+    grid-template-columns: repeat(4, 1fr);
+    /* Force 4 columns for the new layout */
+    grid-template-rows: auto;
+    gap: 24px;
+}
+
+.greeting-card {
+    grid-column: span 2;
+    /* Make this card take up two columns */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.dashboard-actions-card {
+    grid-column: span 2;
+    /* Make this card take up two columns */
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    justify-content: flex-end;
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+.greeting-card h1 {
+    font-size: 2.5rem;
+    margin: 0 0 12px 0;
+    font-weight: 700;
+}
+
+.greeting-card p {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 350px;
+    line-height: 1.6;
+}
+
+.greeting-date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    font-weight: 600;
+    color: var(--accent-purple);
+    font-size: 1.2rem;
+}
+
+.greeting-date span:nth-child(2) {
+    font-size: 2.5rem;
+    color: var(--text-primary);
+    line-height: 1;
+}

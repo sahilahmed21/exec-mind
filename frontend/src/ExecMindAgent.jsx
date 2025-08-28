@@ -372,6 +372,13 @@ function Dashboard({ setCurrentView }) {
     const [isLoading, setIsLoading] = useState(true);
     const [isGenerating, setIsGenerating] = useState(false);
     const [error, setError] = useState('');
+    const [userName] = useState('Marc'); // Assuming user's name is Marc
+
+    // Date and Greeting Logic
+    const date = new Date();
+    const hour = date.getHours();
+    const greeting = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+    const formattedDate = date.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).replace(',', '');
 
     const fetchInsights = async () => {
         setIsLoading(true);
@@ -405,19 +412,29 @@ function Dashboard({ setCurrentView }) {
 
     return (
         <div className="view-container">
-            <div className="dashboard-header">
-                <div>
-                    <h1>Friday Notes & Insights</h1>
-                    <p>AI-curated strategic insights and trending topics</p>
+            <div className="stats-grid dashboard-grid-override">
+                {/* --- Top Left Greeting Card --- */}
+                <div className="stat-card greeting-card">
+                    <div className="greeting-text">
+                        <h1>{greeting}, {userName}</h1>
+                        <p>Your CEO command center for strategic leadership and operational excellence</p>
+                    </div>
+                    <div className="greeting-date">
+                        <span>{formattedDate.split(' ')[0]}</span>
+                        <span>{formattedDate.split(' ')[1]}</span>
+                        <span>{formattedDate.split(' ')[2]}</span>
+                    </div>
                 </div>
-                <div className="header-actions">
+
+                {/* --- Top Right Action Buttons --- */}
+                <div className="dashboard-actions-card">
                     <button className="btn-secondary" onClick={handleGenerateInsights} disabled={isGenerating}>
                         {isGenerating ? <Loader /> : '✨'} Generate Weekly Insights
                     </button>
                     <button className="btn-primary" onClick={() => setCurrentView('fridayNotes')}>⚡ Generate Weekly Summary</button>
                 </div>
-            </div>
-            <div className="stats-grid">
+
+                {/* --- Bottom Row Stat Cards --- */}
                 <div className="stat-card">
                     <h4>Insights Read This Week</h4>
                     <div className="stat-value">12</div>
@@ -429,22 +446,23 @@ function Dashboard({ setCurrentView }) {
                     <div className="stat-delta">Ideas put into action</div>
                 </div>
                 <div className="stat-card">
-                    <h4>Relevance Score</h4>
-                    <div className="stat-value">8.9/10</div>
-                    <div className="stat-delta">AI matching accuracy</div>
+                    <h4><span style={{ verticalAlign: 'middle', marginRight: '8px' }}>🕒</span>This Week</h4>
+                    <div className="stat-value">23</div>
+                    <div className="stat-delta">Strategic Meetings</div>
                 </div>
                 <div className="stat-card">
-                    <h4>Time Saved</h4>
-                    <div className="stat-value">3.2h</div>
-                    <div className="stat-delta">Research time per week</div>
+                    <h4><span style={{ verticalAlign: 'middle', marginRight: '8px' }}>📈</span>Revenue Growth</h4>
+                    <div className="stat-value" style={{ color: 'var(--accent-green)' }}>+18%</div>
+                    <div className="stat-delta">QoQ</div>
                 </div>
             </div>
+
             <div className="insights-feed">
                 {isLoading && <p>Loading insights...</p>}
                 {error && <div className="state-display error">{error}</div>}
                 {!isLoading && !error && insights.length === 0 && (
                     <div className="state-display loading">
-                        <span>💡</span> No insights found for this week. Click "Generate Weekly Insights" to create them!
+                        <span>💡</span> No insights found. Click "Generate Weekly Insights" to create them!
                     </div>
                 )}
                 {insights.map(insight => (
@@ -577,7 +595,7 @@ function FridayNotesGenerator() {
         const encodedSubject = encodeURIComponent(subject);
         const encodedBody = encodeURIComponent(body);
 
-        const outlookUrl = `https://outlook.office.com/mail/deeplink/compose?subject=${encodedSubject}&body=${encodedBody}`;
+        const outlookUrl = `https://outlook.office.com/mail/`;
         window.open(outlookUrl, '_blank');
     };
 
@@ -655,14 +673,21 @@ function FridayNotesGenerator() {
 }
 
 function DocumentAnalyzer() {
-    // Pre-fill the input with a sample prompt for the demo
     const [query, setQuery] = useState("Summarize Xerox’s Crum & Forster insurance venture");
     const [analysisResult, setAnalysisResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
+
+    useEffect(() => {
+        if (transcript) {
+            setQuery(transcript);
+        }
+    }, [transcript]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isListening) stopListening();
         setIsLoading(true); setError(''); setAnalysisResult(null);
         try {
             const { data } = await apiService.analyzeDocument(query);
@@ -671,32 +696,48 @@ function DocumentAnalyzer() {
         finally { setIsLoading(false); }
     };
 
+    const handleExportToOutlook = () => {
+        if (!analysisResult) return;
+
+        const subject = `AI Analyst: Summary for "${query}"`;
+        let body = `${analysisResult.summary}\n\n`;
+
+        analysisResult.sections.forEach(section => {
+            body += `${section.title}\n`;
+            body += '--------------------\n';
+            body += section.points.map(point => `- ${point}`).join('\n');
+            body += '\n\n';
+        });
+
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(body);
+        const outlookUrl = `https://outlook.office.com/mail/`;
+        window.open(outlookUrl, '_blank');
+    };
+
     return (
         <div className="view-container">
-            <div className="dashboard-header">
-                <h1>AI Analyst</h1>
-                <p>Ask a question about your knowledge base.</p>
-            </div>
+            <div className="dashboard-header"><h1>AI Analyst</h1><p>Ask a question about your knowledge base.</p></div>
             <form onSubmit={handleSubmit} className="standard-form">
-                <div className="form-group">
+                <div className="form-group" style={{ position: 'relative' }}>
                     <label>Your Question</label>
-                    <input
-                        type="text"
-                        className="form-textarea" // Use same style as text area
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
+                    <input type="text" className="form-textarea" value={query} onChange={(e) => setQuery(e.target.value)} />
+                    <button type="button" className={`mic-button ${isListening ? 'listening' : ''}`} onClick={isListening ? stopListening : startListening}>🎤</button>
                 </div>
-                <button type="submit" className="btn-primary" disabled={isLoading}>
-                    {isLoading ? <Loader /> : '🧠 Get Analysis'}
-                </button>
+                <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : '🧠 Get Analysis'}</button>
             </form>
-
             <StateDisplay isLoading={isLoading} error={error} />
-
             {analysisResult && (
                 <div className="results-container analysis-result">
-                    <h2>Analysis Result</h2>
+                    <div className="newsletter-header">
+                        <h2>Analysis Result</h2>
+                        <button className="btn-secondary" onClick={handleExportToOutlook}>
+                            <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em" style={{ marginRight: '8px', verticalAlign: 'middle' }}>
+                                <path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"></path>
+                            </svg>
+                            Export to Outlook
+                        </button>
+                    </div>
                     <p className="analysis-summary">{analysisResult.summary}</p>
                     {analysisResult.sections.map((section, index) => (
                         <div key={index} className="analysis-section">
@@ -743,6 +784,7 @@ function AfterMeetingForm() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isListening) stopListening();
         setIsLoading(true); setError(''); setSuccessMessage('');
         try {
             const payload = { ...formData, date: new Date().toISOString(), participants: formData.participants.split(',').map(name => ({ name: name.trim() })) };
@@ -802,9 +844,17 @@ function BeforeMeetingForm() {
     const [answer, setAnswer] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
+    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
+
+    useEffect(() => {
+        if (transcript) {
+            setQuery(transcript);
+        }
+    }, [transcript]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (isListening) stopListening();
         setIsLoading(true); setError(''); setAnswer('');
         try {
             const { data } = await apiService.askAboutMeeting(query);
@@ -820,9 +870,10 @@ function BeforeMeetingForm() {
         <div className="view-container">
             <div className="dashboard-header"><h1>Before the Meeting</h1><p>Ask the agent for a summary of any past meeting.</p></div>
             <form onSubmit={handleSubmit} className="standard-form">
-                <div className="form-group">
+                <div className="form-group" style={{ position: 'relative' }}>
                     <label>Your Question</label>
                     <input type="text" className="form-textarea" value={query} onChange={(e) => setQuery(e.target.value)} />
+                    <button type="button" className={`mic-button ${isListening ? 'listening' : ''}`} onClick={isListening ? stopListening : startListening}>🎤</button>
                 </div>
                 <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : '❓ Ask Agent'}</button>
             </form>
@@ -864,6 +915,7 @@ function CaptureIdeaForm() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!content.trim()) { setError("Idea content cannot be empty."); return; }
+        if (isListening) stopListening();
         setIsLoading(true); setError(''); setSuccessMessage('');
         try {
             const payload = { content: content, source: 'text' };

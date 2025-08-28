@@ -43,14 +43,21 @@ exports.generateInsights = async (req, res) => {
         const generatedInsights = aiResult.insights;
 
         // 3. Clear old auto-generated insights
-        await Insight.deleteMany({ userId, source: 'ExecMind Synthesis' });
+        await Insight.deleteMany({ userId, source: { $regex: /^Synthesized from/ } });
 
-        // 4. Save the new insights
+        // 4. Create a dynamic source description
+        let sourceDescription = 'Synthesized from ';
+        const sources = [];
+        if (recentMeetings.length > 0) sources.push(`${recentMeetings.length} Meeting(s)`);
+        if (recentIdeas.length > 0) sources.push(`${recentIdeas.length} Idea(s)`);
+        sourceDescription += sources.join(' & ');
+
+        // 5. Save the new insights
         const insightsToSave = generatedInsights.map(insight => ({
             ...insight,
             userId,
-            source: 'ExecMind Synthesis', // Mark as auto-generated
-            readTime: Math.ceil(insight.summary.split(' ').length / 200), // Estimate read time
+            source: sourceDescription, // Use the new dynamic source
+            readTime: Math.ceil(insight.summary.split(' ').length / 200),
         }));
 
         const newInsights = await Insight.insertMany(insightsToSave);
