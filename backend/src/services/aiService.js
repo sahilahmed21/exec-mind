@@ -1,7 +1,7 @@
 // backend/src/services/aiService.js
 
 const OpenAI = require('openai');
-const { NEWSLETTER_PROMPT, MEETING_QA_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT, DOCUMENT_ANALYSIS_PROMPT } = require('../utils/aiPrompts');
+const { NEWSLETTER_PROMPT, MEETING_QA_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, IDEA_SYNTHESIS_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT, DOCUMENT_ANALYSIS_PROMPT } = require('../utils/aiPrompts');
 
 class AIService {
     constructor() {
@@ -161,6 +161,20 @@ class AIService {
         Please provide a conversational answer based on the context.
         `;
         const systemPrompt = MEETING_QA_PROMPT();
+        return this._callOpenAI(prompt, systemPrompt);
+    }
+    async synthesizeIdeas({ query, contextIdeas }) {
+        const prompt = `
+        **User's Query:** "${query}"
+
+        **Relevant Saved Ideas to Synthesize:**
+        ---
+        ${contextIdeas.map(idea => `- ${idea.content}`).join('\n')}
+        ---
+
+        Based on the user's query and their saved ideas, please generate the structured JSON response.
+        `;
+        const systemPrompt = IDEA_SYNTHESIS_PROMPT();
         return this._callOpenAI(prompt, systemPrompt);
     }
 

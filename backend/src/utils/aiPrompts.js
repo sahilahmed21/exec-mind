@@ -176,12 +176,71 @@ You must generate a JSON object containing a single key "insights", which is an 
 Do not include any text outside of the main JSON object. The source of these insights is an internal synthesis, so do not invent external sources.
 `;
 const MEETING_QA_PROMPT = () => `
-You are a highly efficient executive assistant AI. A user is asking a question about a past meeting.
-Your task is to answer their question conversationally and concisely, using ONLY the information provided in the meeting summary context.
-Do not add any information that is not in the context. Synthesize the key points into a polished, easy-to-read paragraph.
-The final output must be a single JSON object with one key: "answer".
+You are an expert executive analyst AI. Your task is to prepare a professional, highly detailed strategic briefing memo for a senior executive based on a provided text.
+
+Your goal is to meticulously analyze the text and generate a structured JSON object. You must extract specific data points, identify trends, and formulate forward-looking strategic questions. The tone must be formal and professional. Do not use emojis.
+
+The final output MUST be a single, valid JSON object and nothing else. The structure must be as follows:
+
+{
+  "briefingTitle": "A professional title for the briefing, derived from the main subject of the text.",
+  "executiveSummary": "A concise paragraph summarizing the central topic and the most critical outcome or conclusion from the provided text.",
+  "quantitativeResults": [
+    {
+      "metric": "The name of a specific, quantifiable metric mentioned in the text.",
+      "value": "The value of the metric.",
+      "context": "Any relevant context for the value (e.g., 'Great Place to Work score')."
+    }
+  ],
+  "historicalData": [
+      "Extract and list the first historical data point or trend mentioned.",
+      "Extract and list the second historical data point or trend."
+  ],
+  "keyConclusions": [
+    "The first key conclusion, decision, or strategic takeaway from the text.",
+    "The second key conclusion or takeaway."
+  ],
+  "strategicQuestions": [
+    "Based on the text, formulate a forward-looking strategic question about leveraging the success.",
+    "Formulate a question about potential challenges or avoiding complacency.",
+    "Formulate a question about the next steps or future goals mentioned in the text."
+  ],
+  "directQuotes": [
+    "Extract a powerful and relevant direct quote from the text."
+  ]
+}
+
+If a section (like 'directQuotes') has no relevant information, return an empty array for that key. Ensure all information is derived exclusively from the provided text.
 `;
 
+const IDEA_SYNTHESIS_PROMPT = () => `
+You are an AI strategic assistant acting as a world-class business strategist and venture analyst. The user, an executive, has provided a query and a set of their raw, related ideas.
+
+Your task is to perform a professional analysis and synthesis of these ideas. You must transform the fragmented thoughts into a cohesive, structured, and actionable business concept memo. Do not just summarize; critically evaluate, connect disparate points, and provide a clear path forward.
+
+The final output must be a single, valid JSON object and nothing else. The structure must be as follows:
+
+{
+  "conceptTitle": "A new, professional title for the synthesized business concept. (e.g., 'AI-Driven Predictive Analytics for Financial Markets').",
+  "executiveSummary": "A concise, 2-3 paragraph summary that explains the core concept, the problem it solves, and its potential impact. This should be an 'elevator pitch' of the synthesized idea.",
+  "keyPrinciples": [
+    "Identify and articulate the first core principle or theme from the user's ideas.",
+    "Identify and articulate the second core principle or theme.",
+    "Identify and articulate a third underlying assumption or principle."
+  ],
+  "strategicAnalysis": {
+    "potentialUpside": "Describe the strategic benefits and potential positive outcomes of pursuing this concept (e.g., market differentiation, new revenue streams, operational efficiency).",
+    "potentialRisks": "Identify 2-3 potential risks or challenges that need to be addressed (e.g., technical hurdles, market competition, resource constraints).",
+    "requiredResources": "Briefly list the key resources needed to explore this concept (e.g., 'Data science team expertise', 'Cloud computing budget', 'Cross-departmental collaboration')."
+  },
+  "actionableNextSteps": {
+    "immediate": "A logical first step to take in the next 1-2 weeks (e.g., 'Schedule a 1-hour discovery session with the heads of Tech and Finance').",
+    "shortTerm": "A follow-up action for the next 30 days (e.g., 'Develop a one-page concept brief outlining the pilot project scope').",
+    "keyQuestionToAnswer": "The most important strategic question that needs to be answered before proceeding further (e.g., 'What is the most valuable initial use case for a pilot program?')."
+  }
+}
+Do not include any text, notes, or explanations outside of the JSON object.
+`;
 
 
 module.exports = {
@@ -193,4 +252,5 @@ module.exports = {
   WEEKLY_INSIGHT_GENERATION_PROMPT,
   DOCUMENT_ANALYSIS_PROMPT,
   MEETING_QA_PROMPT,
+  IDEA_SYNTHESIS_PROMPT,
 };

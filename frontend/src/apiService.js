@@ -96,5 +96,8 @@ export default {
         return apiClient.post('/meetings/ask', { query });
     },
 
+    synthesizeIdea(query) {
+        return apiClient.post('/ideas/synthesize', { query });
+    },
 
 };

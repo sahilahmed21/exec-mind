@@ -20,5 +20,6 @@ router.post('/voice', authenticate, uploadSingle('audio'), ideaController.create
 // @desc    Get all ideas for the user
 // @access  Private
 router.get('/', authenticate, ideaController.getIdeas);
+router.post('/synthesize', authenticate, ideaController.synthesizeIdea);
 
 module.exports = router;
