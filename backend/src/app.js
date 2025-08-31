@@ -6,7 +6,7 @@ const path = require('path');
 
 // --- All Route Imports ---
 const searchRoutes = require('./routes/search');
-const meetingQARoutes = require('./routes/meetingQA'); // The new meeting routes
+const meetingRoutes = require('./routes/meetings'); // CORRECT: Use this
 const ideaRoutes = require('./routes/ideas');
 const newsletterRoutes = require('./routes/newsletters');
 const profileRoutes = require('./routes/profile');
@@ -33,7 +33,7 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/execmind'
 
 // --- Register All Routes ---
 app.use('/api/search', searchRoutes);
-app.use('/api/meetings', meetingQARoutes); // Use the correct variable here
+app.use('/api/meetings', meetingRoutes); // CORRECT: Use this
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/profile', profileRoutes);

@@ -69,3 +69,39 @@ exports.askAboutMeeting = async (req, res) => {
         res.status(500).json({ error: 'Failed to answer the question.' });
     }
 };
+exports.quickCaptureMeeting = async (req, res) => {
+    try {
+        const { rawText } = req.body;
+        if (!rawText) {
+            return res.status(400).json({ error: 'Raw text is required.' });
+        }
+
+        // 1. Have the AI structure the raw text
+        const structuredData = await aiService.structureQuickCapture(rawText);
+
+        // 2. Format the actionItems to ensure they are objects
+        // This makes the code robust in case the AI returns an array of strings
+        const formattedActionItems = (structuredData.actionItems || []).map(item =>
+            (typeof item === 'string') ? { description: item } : item
+        );
+
+        // 3. Save the structured and formatted data as a new meeting
+        const newMeeting = new Meeting({
+            userId: req.user._id,
+            title: structuredData.title,
+            participants: structuredData.participants.map(name => ({ name })),
+            date: new Date(structuredData.date),
+            summary: structuredData.summary,
+            keyPoints: structuredData.keyPoints.map(point => ({ point })),
+            actionItems: formattedActionItems, // Use the formatted array
+            followUpNeeded: false
+        });
+
+        await newMeeting.save();
+        res.status(201).json(newMeeting);
+
+    } catch (error) {
+        console.error('Quick capture error:', error);
+        res.status(500).json({ error: 'Failed to process quick capture.' });
+    }
+};

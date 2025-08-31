@@ -1,13 +1,14 @@
 // frontend/src/ExecMindAgent.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './ExecMindAgent.css';
 import apiService from './apiService';
 import useSpeechRecognition from './hooks/useSpeechRecognition';
+import VoiceVisualizer from './components/VoiceVisualizer';
 
 // === Icon Components ===
 const HomeIcon = () => (
     <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
-        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"></path>
+        <path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3l9-8z" />
     </svg>
 );
 
@@ -34,6 +35,18 @@ const SearchIcon = () => (
 const BriefingIcon = () => (
     <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
         <path d="M14 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm-4-6h8v2h-8V6zm0 3h8v2h-8V9zm-4 6c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path>
+    </svg>
+);
+
+const FlashIcon = () => (
+    <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
+        <path d="M7 2v11h3v9l7-12h-4l4-8z" />
+    </svg>
+);
+
+const NoteIcon = () => (
+    <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
+        <path d="M3 5v14a2 2 0 002 2h14a2 2 0 002-2V8l-6-6H5a2 2 0 00-2 2zm14 14H7V7h7v5h5v7z" />
     </svg>
 );
 
@@ -181,6 +194,7 @@ export function ExecMindAgent({ onLogout }) {
     const renderView = () => {
         switch (currentView) {
             case 'dashboard': return <Dashboard setCurrentView={setCurrentView} />;
+            case 'quickCapture': return <QuickCapture />;
             case 'fridayNotes': return <FridayNotesGenerator />;
             case 'viewDraft': return <ViewDraft draftId={selectedDraftId} onBack={() => setCurrentView('fridayNotes')} />;
             case 'searchResults': return <SearchResults query={searchQuery} results={searchResults} onViewDraft={handleViewDraft} />;
@@ -281,11 +295,12 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, isCollaps
 
     const shortcuts = [
         { id: 'dashboard', label: 'Dashboard', icon: <HomeIcon /> },
-        { id: 'fridayNotes', label: 'Friday Notes', icon: '📝' },
+        { id: 'quickCapture', label: 'Quick Capture', icon: <FlashIcon /> },
+        { id: 'beforeMeeting', label: 'Meeting Insights', icon: <BriefingIcon /> },
+        { id: 'fridayNotes', label: 'Friday Notes', icon: <NoteIcon /> },
         { id: 'captureIdea', label: 'Capture Idea', icon: <BulbIcon /> },
         { id: 'exploreIdeas', label: 'Explore Ideas', icon: <SearchIcon /> },
         { id: 'afterMeeting', label: 'Process Meeting', icon: <MeetingIcon /> },
-        { id: 'beforeMeeting', label: 'Before Meeting', icon: <BriefingIcon /> },
         { id: 'documentAnalyzer', label: 'Doc Analysis', icon: <BookIcon /> },
     ];
 
@@ -869,6 +884,15 @@ function BeforeMeetingForm() {
                     <h2>{answer.briefingTitle}</h2>
                     <p className="briefing-summary">{answer.executiveSummary}</p>
 
+                    {hasContent(answer.actionPoints) && (
+                        <div className="briefing-section">
+                            <h3>Action Points</h3>
+                            <ul>
+                                {answer.actionPoints.map((item, index) => <li key={index}>{item}</li>)}
+                            </ul>
+                        </div>
+                    )}
+
                     <div className="briefing-grid">
                         {hasContent(answer.quantitativeResults) && (
                             <div className="briefing-section">
@@ -892,15 +916,6 @@ function BeforeMeetingForm() {
                         )}
                     </div>
 
-                    {hasContent(answer.keyConclusions) && (
-                        <div className="briefing-section">
-                            <h3>Key Conclusions</h3>
-                            <ul>
-                                {answer.keyConclusions.map((item, index) => <li key={index}>{item}</li>)}
-                            </ul>
-                        </div>
-                    )}
-
                     {hasContent(answer.strategicQuestions) && (
                         <div className="briefing-section">
                             <h3>Strategic Questions</h3>
@@ -923,6 +938,12 @@ function BeforeMeetingForm() {
         </div>
     );
 }
+
+
+
+
+
+
 
 function CaptureIdeaForm() {
     const [content, setContent] = useState('');
@@ -1065,6 +1086,86 @@ function IdeaSynthesizer() {
                     </div>
                 </div>
             )}
+        </div>
+    );
+}
+function QuickCapture() {
+    const [rawText, setRawText] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
+    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
+
+    // Create a ref for the form to trigger submission
+    const formRef = useRef();
+
+    useEffect(() => {
+        // Update the textarea with the transcript as it comes in
+        if (transcript) {
+            setRawText(transcript);
+        }
+
+        // When listening stops and there's a transcript, automatically submit the form
+        if (!isListening && transcript.trim()) {
+            // Check if the form ref is attached before submitting
+            if (formRef.current) {
+                // Programmatically click the submit button
+                formRef.current.requestSubmit();
+            }
+        }
+    }, [transcript, isListening]);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault(); // Prevent default form submission
+        if (!rawText.trim()) {
+            setError("Please provide a summary to process.");
+            return;
+        }
+        setIsLoading(true); setError(''); setSuccessMessage('');
+        try {
+            const { data } = await apiService.quickCaptureMeeting(rawText);
+            // This is the success message you liked, showing the title
+            setSuccessMessage(`Successfully captured and saved meeting: "${data.title}"`);
+            setRawText('');
+        } catch (err) {
+            setError(err.response?.data?.error || 'Failed to process the summary.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="view-container">
+            <div className="dashboard-header">
+                <h1>Quick Capture</h1>
+                <p>Tap the orb to speak. The AI will automatically process and save your debrief when you're done.</p>
+            </div>
+
+            <div className="quick-capture-layout">
+                <VoiceVisualizer
+                    isListening={isListening}
+                    onClick={isListening ? stopListening : startListening}
+                />
+
+                {/* The form and button are back, but submission is automatic */}
+                <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
+                    <div className="form-group">
+                        <label>Meeting Debrief Transcript</label>
+                        <textarea
+                            className="form-textarea"
+                            value={rawText}
+                            onChange={(e) => setRawText(e.target.value)}
+                            placeholder="Tap the orb to start speaking, or edit the transcript here..."
+                            style={{ minHeight: '150px' }}
+                        />
+                    </div>
+                    <button type="submit" className="btn-primary" disabled={isLoading || !rawText.trim()}>
+                        {isLoading ? <Loader /> : 'Process & Save Summary'}
+                    </button>
+                </form>
+            </div>
+
+            <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
         </div>
     );
 }

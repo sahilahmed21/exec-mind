@@ -99,5 +99,8 @@ export default {
     synthesizeIdea(query) {
         return apiClient.post('/ideas/synthesize', { query });
     },
+    quickCaptureMeeting(rawText) {
+        return apiClient.post('/meetings/quick-capture', { rawText });
+    },
 
 };

@@ -1,23 +1,18 @@
-// src/routes/meetings.js
-
 const express = require('express');
 const router = express.Router();
 const meetingController = require('../controllers/meetingController');
 const { authenticate } = require('../middleware/auth');
 
-// @route   POST api/meetings/summarize
-// @desc    Create a meeting summary from notes
-// @access  Private
+// GET /api/meetings - Get all saved meetings
+router.get('/', authenticate, meetingController.getMeetings);
+
+// POST /api/meetings/summarize - Create a new meeting summary
 router.post('/summarize', authenticate, meetingController.createMeetingSummary);
 
-// @route   GET api/meetings/prep/:participantName
-// @desc    Get pre-meeting briefing for a participant
-// @access  Private
-router.get('/prep/:participantName', authenticate, meetingController.getMeetingPrep);
+// POST /api/meetings/ask - Ask a question about saved meetings
+router.post('/ask', authenticate, meetingController.askAboutMeeting);
 
-// @route   GET api/meetings
-// @desc    Get all meetings for the user
-// @access  Private
-router.get('/', authenticate, meetingController.getMeetings);
+// POST /api/meetings/quick-capture - Process a spoken summary (THIS IS THE NEW ROUTE)
+router.post('/quick-capture', authenticate, meetingController.quickCaptureMeeting);
 
 module.exports = router;

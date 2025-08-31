@@ -1,7 +1,7 @@
 // backend/src/services/aiService.js
 
 const OpenAI = require('openai');
-const { NEWSLETTER_PROMPT, MEETING_QA_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, IDEA_SYNTHESIS_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT, DOCUMENT_ANALYSIS_PROMPT } = require('../utils/aiPrompts');
+const { NEWSLETTER_PROMPT, QUICK_CAPTURE_PROMPT, MEETING_QA_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, IDEA_SYNTHESIS_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT, DOCUMENT_ANALYSIS_PROMPT } = require('../utils/aiPrompts');
 
 class AIService {
     constructor() {
@@ -178,6 +178,16 @@ class AIService {
         return this._callOpenAI(prompt, systemPrompt);
     }
 
+    async structureQuickCapture(rawText) {
+        const prompt = `
+        Please analyze the following raw meeting debrief and structure it into the required JSON format:
+        ---
+        ${rawText}
+        ---
+        `;
+        const systemPrompt = QUICK_CAPTURE_PROMPT();
+        return this._callOpenAI(prompt, systemPrompt);
+    }
 
 }
 

@@ -176,7 +176,7 @@ You must generate a JSON object containing a single key "insights", which is an 
 Do not include any text outside of the main JSON object. The source of these insights is an internal synthesis, so do not invent external sources.
 `;
 const MEETING_QA_PROMPT = () => `
-You are an expert executive analyst AI. Your task is to prepare a professional, highly detailed strategic briefing memo for a senior executive based on a provided text.
+You are an expert executive assistant AI tasked with preparing a professional, highly detailed strategic briefing memo for a senior executive based on a provided text.
 
 Your goal is to meticulously analyze the text and generate a structured JSON object. You must extract specific data points, identify trends, and formulate forward-looking strategic questions. The tone must be formal and professional. Do not use emojis.
 
@@ -185,6 +185,11 @@ The final output MUST be a single, valid JSON object and nothing else. The struc
 {
   "briefingTitle": "A professional title for the briefing, derived from the main subject of the text.",
   "executiveSummary": "A concise paragraph summarizing the central topic and the most critical outcome or conclusion from the provided text.",
+  "actionPoints": [
+    "Extract the first key decision or action item as a bullet point.",
+    "Extract the second key decision or action item as a bullet point.",
+    "Summarize the main outcome as a final bullet point."
+  ],
   "quantitativeResults": [
     {
       "metric": "The name of a specific, quantifiable metric mentioned in the text.",
@@ -193,24 +198,32 @@ The final output MUST be a single, valid JSON object and nothing else. The struc
     }
   ],
   "historicalData": [
-      "Extract and list the first historical data point or trend mentioned.",
-      "Extract and list the second historical data point or trend."
-  ],
-  "keyConclusions": [
-    "The first key conclusion, decision, or strategic takeaway from the text.",
-    "The second key conclusion or takeaway."
+      "Extract and list a historical data point or trend mentioned."
   ],
   "strategicQuestions": [
     "Based on the text, formulate a forward-looking strategic question about leveraging the success.",
-    "Formulate a question about potential challenges or avoiding complacency.",
-    "Formulate a question about the next steps or future goals mentioned in the text."
+    "Formulate a question about potential challenges or avoiding complacency."
   ],
   "directQuotes": [
     "Extract a powerful and relevant direct quote from the text."
   ]
 }
 
-If a section (like 'directQuotes') has no relevant information, return an empty array for that key. Ensure all information is derived exclusively from the provided text.
+If a section has no relevant information, return an empty array for that key. Ensure all information is derived exclusively from the provided text.
+`;
+
+const QUICK_CAPTURE_PROMPT = () => `
+You are an expert AI assistant that processes unstructured, spoken meeting debriefs and transforms them into structured data. The user has provided a raw text paragraph summarizing a meeting.
+
+Your task is to analyze the text and generate a single JSON object with the following structure:
+- title: Infer a concise meeting title from the text (e.g., "Sales Strategy Meeting with AI Integration").
+- participants: Extract an array of all participant names mentioned.
+- date: Use today's date in YYYY-MM-DD format.
+- summary: A clean, concise summary of the meeting's purpose and outcome.
+- keyPoints: An array of the most important takeaways or discussion points.
+- actionItems: An array of OBJECTS. Each object MUST have a "description" key containing the task. If a person is assigned, add an "assignedTo" key. Example: [{ "description": "HR Ops to shortlist vendors", "assignedTo": "HR Ops" }]
+
+The final output MUST be a single, valid JSON object and nothing else. If a piece of information (like action items) is not present, return an empty array for that key.
 `;
 
 const IDEA_SYNTHESIS_PROMPT = () => `
@@ -253,4 +266,5 @@ module.exports = {
   DOCUMENT_ANALYSIS_PROMPT,
   MEETING_QA_PROMPT,
   IDEA_SYNTHESIS_PROMPT,
+  QUICK_CAPTURE_PROMPT,
 };
