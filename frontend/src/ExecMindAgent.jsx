@@ -4,6 +4,8 @@ import './ExecMindAgent.css';
 import apiService from './apiService';
 import useSpeechRecognition from './hooks/useSpeechRecognition';
 import VoiceVisualizer from './components/VoiceVisualizer';
+import useTextToSpeech from './hooks/useTextToSpeech';
+import { Volume2, Play, Pause } from "lucide-react";
 
 // === Icon Components ===
 const HomeIcon = () => (
@@ -161,15 +163,29 @@ function ViewDraft({ draftId, onBack }) {
     );
 }
 
-// === Main Application Wrapper ===
+// === Main Application Wrapper (Updated) ===
 export function ExecMindAgent({ onLogout }) {
+    // --- All State is now managed here ---
     const [currentView, setCurrentView] = useState('dashboard');
     const [userName] = useState('Marc');
+
+    // Master lists for shared data
+    const [meetings, setMeetings] = useState([]);
+    const [ideas, setIdeas] = useState([]);
+    const [drafts, setDrafts] = useState([]);
+
     const [selectedDraftId, setSelectedDraftId] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState(null);
     const [isSearching, setIsSearching] = useState(false);
     const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+    // Fetch initial data when the app loads
+    useEffect(() => {
+        apiService.getMeetings().then(res => setMeetings(res.data));
+        apiService.getIdeas().then(res => setIdeas(res.data));
+        apiService.getNewsletters().then(res => setDrafts(res.data));
+    }, []);
 
     const handleViewDraft = (draftId) => {
         setSelectedDraftId(draftId);
@@ -191,16 +207,25 @@ export function ExecMindAgent({ onLogout }) {
         }
     };
 
+    // --- New handler to add a meeting to the central list ---
+    const addMeeting = (newMeeting) => {
+        setMeetings(prevMeetings => [newMeeting, ...prevMeetings]);
+    };
+
+    const addIdea = (newIdea) => {
+        setIdeas(prevIdeas => [newIdea, ...prevIdeas]);
+    }
+
     const renderView = () => {
         switch (currentView) {
             case 'dashboard': return <Dashboard setCurrentView={setCurrentView} />;
-            case 'quickCapture': return <QuickCapture />;
-            case 'fridayNotes': return <FridayNotesGenerator />;
+            case 'quickCapture': return <QuickCapture onMeetingSaved={addMeeting} />;
+            case 'fridayNotes': return <FridayNotesGenerator meetings={meetings} ideas={ideas} drafts={drafts} />;
             case 'viewDraft': return <ViewDraft draftId={selectedDraftId} onBack={() => setCurrentView('fridayNotes')} />;
             case 'searchResults': return <SearchResults query={searchQuery} results={searchResults} onViewDraft={handleViewDraft} />;
-            case 'captureIdea': return <CaptureIdeaForm />;
+            case 'captureIdea': return <CaptureIdeaForm ideas={ideas} onIdeaSaved={addIdea} />;
             case 'exploreIdeas': return <IdeaSynthesizer />;
-            case 'afterMeeting': return <AfterMeetingForm />;
+            case 'afterMeeting': return <AfterMeetingForm meetings={meetings} onMeetingSaved={addMeeting} />;
             case 'beforeMeeting': return <BeforeMeetingForm />;
             case 'documentAnalyzer': return <DocumentAnalyzer />;
             default: return <Dashboard setCurrentView={setCurrentView} />;
@@ -214,6 +239,7 @@ export function ExecMindAgent({ onLogout }) {
                 setCurrentView={setCurrentView}
                 onLogout={onLogout}
                 onViewDraft={handleViewDraft}
+                drafts={drafts}
                 isCollapsed={isSidebarCollapsed}
                 setIsCollapsed={setIsSidebarCollapsed}
             />
@@ -285,14 +311,9 @@ function Header({ userName, searchQuery, setSearchQuery, onSearch, isSearching }
     );
 }
 
-function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, isCollapsed, setIsCollapsed }) {
-    const [drafts, setDrafts] = useState([]);
-
-    useEffect(() => {
-        const fetchRecentDrafts = async () => { /* ... fetch logic remains the same */ };
-        fetchRecentDrafts();
-    }, []);
-
+// --- Sidebar (Updated) ---
+function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, isCollapsed, setIsCollapsed }) {
+    // This component now receives drafts as a prop, no longer fetches its own data
     const shortcuts = [
         { id: 'dashboard', label: 'Dashboard', icon: <HomeIcon /> },
         { id: 'quickCapture', label: 'Quick Capture', icon: <FlashIcon /> },
@@ -335,16 +356,26 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, isCollaps
                     <h3 className="sidebar-title">RECENT DRAFTS</h3>
                     <ul className="pending-actions-list">
                         {drafts.length > 0 ? (
-                            drafts.map(draft => (
-                                <li key={draft._id} className="pending-item" onClick={() => onViewDraft(draft._id)}>
+                            drafts.slice(0, 4).map(draft => (
+                                <li
+                                    key={draft._id}
+                                    className="pending-item"
+                                    onClick={() => onViewDraft(draft._id)}
+                                >
                                     <div className="pending-indicator"></div>
                                     <div className="pending-details">
                                         <div className="pending-title">{draft.title}</div>
-                                        <div className="pending-meta">{new Date(draft.weekOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</div>
+                                        <div className="pending-meta">
+                                            {new Date(draft.weekOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </div>
                                     </div>
                                 </li>
                             ))
-                        ) : (<div className="pending-details" style={{ padding: '10px' }}><div className="pending-meta">No recent drafts found.</div></div>)}
+                        ) : (
+                            <div className="pending-details" style={{ padding: '10px' }}>
+                                <div className="pending-meta">No recent drafts found.</div>
+                            </div>
+                        )}
                     </ul>
                 </div>
             </div>
@@ -497,9 +528,10 @@ function Dashboard({ setCurrentView }) {
     );
 }
 
-function FridayNotesGenerator() {
+// --- FridayNotesGenerator (Updated) ---
+function FridayNotesGenerator({ meetings, ideas }) {
     const [sources, setSources] = useState([]);
-    const [isSourceLoading, setIsSourceLoading] = useState(true);
+    const [isSourceLoading, setIsSourceLoading] = useState(false); // Set to false since data is passed as props
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [manualInputs, setManualInputs] = useState('');
     const [result, setResult] = useState(null);
@@ -514,34 +546,13 @@ function FridayNotesGenerator() {
     }, [transcript, isListening]);
 
     useEffect(() => {
-        const fetchSources = async () => {
-            setIsSourceLoading(true);
-            try {
-                const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-
-                const [meetingsRes, ideasRes, insightsRes] = await Promise.all([
-                    apiService.getMeetings(sevenDaysAgo),
-                    apiService.getIdeas(sevenDaysAgo),
-                    apiService.getInsights(sevenDaysAgo)
-                ]);
-
-                const meetings = meetingsRes.data.map(m => ({ ...m, type: 'meeting', date: m.date }));
-                const ideas = ideasRes.data.map(i => ({ ...i, type: 'idea', date: i.createdAt }));
-                const insights = insightsRes.data.map(i => ({ ...i, type: 'insight', date: i.createdAt }));
-
-                const allSources = [...meetings, ...ideas, ...insights]
-                    .sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                setSources(allSources);
-            } catch (err) {
-                setError('Failed to load sources. Please try again.');
-                console.error(err);
-            } finally {
-                setIsSourceLoading(false);
-            }
-        };
-        fetchSources();
-    }, []);
+        // Combines the props to create the sources list
+        const allSources = [
+            ...meetings.map(m => ({ ...m, type: 'meeting', date: m.date })),
+            ...ideas.map(i => ({ ...i, type: 'idea', date: i.createdAt }))
+        ].sort((a, b) => new Date(b.date) - new Date(a.date));
+        setSources(allSources);
+    }, [meetings, ideas]); // Re-runs when the central lists are updated
 
     const toggleSelection = (id) => {
         setSelectedIds(prev => {
@@ -750,26 +761,13 @@ function DocumentAnalyzer() {
     );
 }
 
-function AfterMeetingForm() {
+// --- AfterMeetingForm (Updated) ---
+function AfterMeetingForm({ meetings, onMeetingSaved }) {
     const [formData, setFormData] = useState({ title: '', participants: '', meetingNotes: '' });
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [recentMeetings, setRecentMeetings] = useState([]);
     const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-
-    const fetchMeetings = async () => {
-        try {
-            const { data } = await apiService.getMeetings();
-            setRecentMeetings(data);
-        } catch (err) {
-            console.error("Failed to fetch recent meetings", err);
-        }
-    };
-
-    useEffect(() => {
-        fetchMeetings();
-    }, []);
 
     useEffect(() => {
         if (!isListening && transcript) {
@@ -786,7 +784,7 @@ function AfterMeetingForm() {
             const { data } = await apiService.createMeetingSummary(payload);
             setSuccessMessage('Meeting summarized successfully!');
             setFormData({ title: '', participants: '', meetingNotes: '' });
-            setRecentMeetings(prevMeetings => [data, ...prevMeetings]);
+            onMeetingSaved(data); // <-- This updates the central list
         } catch (err) { setError(err.response?.data?.error || 'Failed to process summary.'); }
         finally { setIsLoading(false); }
     };
@@ -815,7 +813,7 @@ function AfterMeetingForm() {
             <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
             <div className="recent-ideas-container">
                 <h3 className="sidebar-title">RECENTLY PROCESSED</h3>
-                <div className="sources-list">{recentMeetings.slice(0, 5).map(meeting => (
+                <div className="sources-list">{meetings.slice(0, 5).map(meeting => (
                     <div key={meeting._id} className="source-item">
                         <div className="type-indicator meeting"></div>
                         <div className="source-details">
@@ -837,90 +835,170 @@ function AfterMeetingForm() {
 // In frontend/src/ExecMindAgent.jsx
 
 function BeforeMeetingForm() {
-    const [query, setQuery] = useState("What was decided in the 2025 voices at CNF session?");
+    const [query, setQuery] = useState("");
     const [answer, setAnswer] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState('');
-    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
+    const [error, setError] = useState("");
 
+    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
+    const { isSpeaking, speak, cancel } = useTextToSpeech();
+
+    const formRef = useRef();
+
+    // 🎤 Handle transcript auto-fill + auto-submit
     useEffect(() => {
         if (transcript) {
             setQuery(transcript);
         }
-    }, [transcript]);
+        if (!isListening && transcript.trim()) {
+            if (formRef.current) {
+                formRef.current.requestSubmit();
+            }
+        }
+    }, [transcript, isListening]);
 
+    // 📝 Submit handler
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (isListening) stopListening();
-        setIsLoading(true); setError(''); setAnswer(null);
+        cancel(); // stop previous narration
+        setIsLoading(true);
+        setError("");
+        setAnswer(null);
+
         try {
             const { data } = await apiService.askAboutMeeting(query);
             setAnswer(data);
         } catch (err) {
-            const errorMessage = err.response?.data?.answer || err.response?.data?.error || 'Failed to get an answer.';
+            const errorMessage =
+                err.response?.data?.answer ||
+                err.response?.data?.error ||
+                "Failed to get an answer.";
             setError(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
-        finally { setIsLoading(false); }
     };
 
-    // Helper function to check if an array is valid and has items
+    // ✅ Helper: check if array has items
     const hasContent = (arr) => Array.isArray(arr) && arr.length > 0;
+
+    // 🔊 Convert structured answer into a narration string
+    const generateSpokenText = (briefing) => {
+        if (!briefing) return "";
+
+        let text = `Briefing on ${briefing.briefingTitle}. ${briefing.executiveSummary}. `;
+
+        if (hasContent(briefing.actionPoints)) {
+            text += "The key action points are: " + briefing.actionPoints.join(". ") + ". ";
+        }
+        if (hasContent(briefing.strategicQuestions)) {
+            text +=
+                "For the next meeting, consider these strategic questions: " +
+                briefing.strategicQuestions.join(". ");
+        }
+        return text;
+    };
+
+    // 🎙️ Speak/Stop button handler
+    const handleSpeakButtonClick = () => {
+        if (isSpeaking) {
+            cancel();
+        } else if (answer) {
+            const textToSpeak = generateSpokenText(answer);
+            speak(textToSpeak);
+        }
+    };
 
     return (
         <div className="view-container">
-            <div className="dashboard-header"><h1>Before the Meeting</h1><p>Ask the agent for a detailed briefing on any past meeting.</p></div>
-            <form onSubmit={handleSubmit} className="standard-form">
-                <div className="form-group" style={{ position: 'relative' }}>
-                    <label>Your Question</label>
-                    <input type="text" className="form-textarea" value={query} onChange={(e) => setQuery(e.target.value)} />
-                    <button type="button" className={`mic-button ${isListening ? 'listening' : ''}`} onClick={isListening ? stopListening : startListening}>🎤</button>
+            <div className="dashboard-header">
+                <h1>Meeting Insights</h1>
+                <p>Ask the agent for a detailed briefing on any past meeting.</p>
+            </div>
+
+            {/* 🎤 Voice capture orb */}
+            <div className="quick-capture-layout">
+                <VoiceVisualizer
+                    isListening={isListening}
+                    onClick={isListening ? stopListening : startListening}
+                />
+            </div>
+
+            {/* 📝 Question form */}
+            <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ marginTop: "24px" }}>
+                <div className="form-group">
+                    {/* <label>Your Question</label> */}
+                    <input
+                        type="text"
+                        className="form-textarea"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        placeholder="Ask the Agent for previous meeting Insights "
+                    />
                 </div>
-                <button type="submit" className="btn-primary" disabled={isLoading}>{isLoading ? <Loader /> : 'Get Briefing'}</button>
+                <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()}>
+                    {isLoading ? <Loader /> : "Get Insights"}
+                </button>
             </form>
+
             <StateDisplay isLoading={isLoading} error={error} />
 
+            {/* 📊 Results */}
             {answer && (
                 <div className="results-container briefing-card professional">
-                    <h2>{answer.briefingTitle}</h2>
-                    <p className="briefing-summary">{answer.executiveSummary}</p>
+                    <div className="briefing-header">
+                        <h2>{answer.briefingTitle}</h2>
+                        <button className="btn-secondary speak-button" onClick={handleSpeakButtonClick}>
+                            {isSpeaking ? <Pause /> : <Play />}
+                        </button>
+                    </div>
 
-                    {hasContent(answer.actionPoints) && (
-                        <div className="briefing-section">
-                            <h3>Action Points</h3>
-                            <ul>
-                                {answer.actionPoints.map((item, index) => <li key={index}>{item}</li>)}
-                            </ul>
-                        </div>
-                    )}
+                    <p className="briefing-summary">{answer.executiveSummary}</p>
 
                     <div className="briefing-grid">
                         {hasContent(answer.quantitativeResults) && (
                             <div className="briefing-section">
                                 <h3>Quantitative Results</h3>
-                                {answer.quantitativeResults.map((item, index) =>
+                                {answer.quantitativeResults.map((item, index) => (
                                     <div className="metric-card" key={index}>
                                         <div className="metric-value">{item.value}</div>
                                         <div className="metric-label">{item.metric}</div>
                                         <div className="metric-context">{item.context}</div>
                                     </div>
-                                )}
+                                ))}
                             </div>
                         )}
+
                         {hasContent(answer.historicalData) && (
                             <div className="briefing-section">
                                 <h3>Historical Data</h3>
                                 <ul>
-                                    {answer.historicalData.map((item, index) => <li key={index}>{item}</li>)}
+                                    {answer.historicalData.map((item, index) => (
+                                        <li key={index}>{item}</li>
+                                    ))}
                                 </ul>
                             </div>
                         )}
                     </div>
 
+                    {hasContent(answer.actionPoints) && (
+                        <div className="briefing-section">
+                            <h3>Action Points</h3>
+                            <ul>
+                                {answer.actionPoints.map((item, index) => (
+                                    <li key={index}>{item}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
                     {hasContent(answer.strategicQuestions) && (
                         <div className="briefing-section">
                             <h3>Strategic Questions</h3>
                             <ul>
-                                {answer.strategicQuestions.map((item, index) => <li key={index}>{item}</li>)}
+                                {answer.strategicQuestions.map((item, index) => (
+                                    <li key={index}>{item}</li>
+                                ))}
                             </ul>
                         </div>
                     )}
@@ -940,30 +1018,13 @@ function BeforeMeetingForm() {
 }
 
 
-
-
-
-
-
-function CaptureIdeaForm() {
+// --- CaptureIdeaForm (Updated) ---
+function CaptureIdeaForm({ ideas, onIdeaSaved }) {
     const [content, setContent] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
-    const [recentIdeas, setRecentIdeas] = useState([]);
     const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-
-    useEffect(() => {
-        const fetchIdeas = async () => {
-            try {
-                const { data } = await apiService.getIdeas();
-                setRecentIdeas(data);
-            } catch (err) {
-                console.error("Failed to fetch recent ideas", err);
-            }
-        };
-        fetchIdeas();
-    }, []);
 
     useEffect(() => {
         if (!isListening && transcript) {
@@ -982,7 +1043,7 @@ function CaptureIdeaForm() {
             const { data } = await apiService.createIdea(payload);
             setSuccessMessage(`Idea captured! AI classified it under '${data.category}'.`);
             setContent('');
-            setRecentIdeas(prevIdeas => [data, ...prevIdeas]);
+            onIdeaSaved(data); // <-- Updates the central list
         } catch (err) { setError(err.response?.data?.error || 'Failed to capture idea.'); }
         finally { setIsLoading(false); }
     };
@@ -1011,7 +1072,7 @@ function CaptureIdeaForm() {
             <div className="recent-ideas-container">
                 <h3 className="sidebar-title">RECENTLY CAPTURED</h3>
                 <div className="sources-list">
-                    {recentIdeas.slice(0, 5).map(idea => (
+                    {ideas.slice(0, 5).map(idea => (
                         <div key={idea._id} className="source-item">
                             <div className="type-indicator idea"></div>
                             <div className="source-details">
@@ -1089,7 +1150,9 @@ function IdeaSynthesizer() {
         </div>
     );
 }
-function QuickCapture() {
+
+// --- QuickCapture (Updated) ---
+function QuickCapture({ onMeetingSaved }) {
     const [rawText, setRawText] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -1127,6 +1190,7 @@ function QuickCapture() {
             // This is the success message you liked, showing the title
             setSuccessMessage(`Successfully captured and saved meeting: "${data.title}"`);
             setRawText('');
+            onMeetingSaved(data); // <-- This updates the central list
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to process the summary.');
         } finally {
@@ -1150,7 +1214,7 @@ function QuickCapture() {
                 {/* The form and button are back, but submission is automatic */}
                 <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
                     <div className="form-group">
-                        <label>Meeting Debrief Transcript</label>
+                        {/* <label>Meeting Debrief Transcript</label> */}
                         <textarea
                             className="form-textarea"
                             value={rawText}
@@ -1160,7 +1224,7 @@ function QuickCapture() {
                         />
                     </div>
                     <button type="submit" className="btn-primary" disabled={isLoading || !rawText.trim()}>
-                        {isLoading ? <Loader /> : 'Process & Save Summary'}
+                        {isLoading ? <Loader /> : 'Capture'}
                     </button>
                 </form>
             </div>

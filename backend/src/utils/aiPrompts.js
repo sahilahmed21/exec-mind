@@ -178,34 +178,17 @@ Do not include any text outside of the main JSON object. The source of these ins
 const MEETING_QA_PROMPT = () => `
 You are an expert executive assistant AI tasked with preparing a professional, highly detailed strategic briefing memo for a senior executive based on a provided text.
 
-Your goal is to meticulously analyze the text and generate a structured JSON object. You must extract specific data points, identify trends, and formulate forward-looking strategic questions. The tone must be formal and professional. Do not use emojis.
+Your goal is to meticulously analyze the text and generate a structured JSON object. You must extract specific data points, identify trends. The tone must be formal and professional. Do not use emojis.
 
 The final output MUST be a single, valid JSON object and nothing else. The structure must be as follows:
 
 {
   "briefingTitle": "A professional title for the briefing, derived from the main subject of the text.",
-  "executiveSummary": "A concise paragraph summarizing the central topic and the most critical outcome or conclusion from the provided text.",
+  "executiveSummary": "A concise but well detailed paragraph with exact data summarizing the central topic and the most critical outcome or conclusion from the provided text.",
   "actionPoints": [
     "Extract the first key decision or action item as a bullet point.",
     "Extract the second key decision or action item as a bullet point.",
     "Summarize the main outcome as a final bullet point."
-  ],
-  "quantitativeResults": [
-    {
-      "metric": "The name of a specific, quantifiable metric mentioned in the text.",
-      "value": "The value of the metric.",
-      "context": "Any relevant context for the value (e.g., 'Great Place to Work score')."
-    }
-  ],
-  "historicalData": [
-      "Extract and list a historical data point or trend mentioned."
-  ],
-  "strategicQuestions": [
-    "Based on the text, formulate a forward-looking strategic question about leveraging the success.",
-    "Formulate a question about potential challenges or avoiding complacency."
-  ],
-  "directQuotes": [
-    "Extract a powerful and relevant direct quote from the text."
   ]
 }
 

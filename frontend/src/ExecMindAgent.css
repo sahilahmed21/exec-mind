@@ -1723,3 +1723,17 @@ button:active {
     position: relative;
     z-index: 1;
 }
+
+/* Add to the end of frontend/src/ExecMindAgent.css */
+
+.briefing-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.speak-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+}
