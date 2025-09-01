@@ -5,7 +5,7 @@ import apiService from './apiService';
 import useSpeechRecognition from './hooks/useSpeechRecognition';
 import VoiceVisualizer from './components/VoiceVisualizer';
 import useTextToSpeech from './hooks/useTextToSpeech';
-import { Volume2, Play, Pause } from "lucide-react";
+import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 
 // === Icon Components ===
 const HomeIcon = () => (
@@ -949,7 +949,15 @@ function BeforeMeetingForm() {
                     <div className="briefing-header">
                         <h2>{answer.briefingTitle}</h2>
                         <button className="btn-secondary speak-button" onClick={handleSpeakButtonClick}>
-                            {isSpeaking ? <Pause /> : <Play />}
+                            {isSpeaking ? (
+                                <>
+                                    <Volume2 className="w-5 h-5" /> Speaking...
+                                </>
+                            ) : (
+                                <>
+                                    <VolumeX className="w-5 h-5" /> Listen
+                                </>
+                            )}
                         </button>
                     </div>
 
