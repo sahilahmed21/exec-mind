@@ -92,7 +92,7 @@ function SearchResults({ query, results, onViewDraft }) {
 
     return (
         <div className="search-results-container">
-            <div className="dashboard-header">
+            <div className="dashboard-header" style={{ textAlign: 'center' }}>
                 <h1>Search Results for "{query}"</h1>
                 <p>{results.length} item(s) found.</p>
             </div>
@@ -835,7 +835,7 @@ function AfterMeetingForm({ meetings, onMeetingSaved }) {
 // In frontend/src/ExecMindAgent.jsx
 
 function BeforeMeetingForm() {
-    const [query, setQuery] = useState("What was discussed in the Meeting with John from InsureTech?");
+    const [query, setQuery] = useState("");
     const [answer, setAnswer] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -871,7 +871,7 @@ function BeforeMeetingForm() {
         <div className="view-container">
             <div className="dashboard-header">
                 <h1>Meeting Insights</h1>
-                <p>Ask the agent for a detailed briefing on any past meeting.</p>
+                <p>Ask the agent for a detailed briefing on any previous meeting.</p>
             </div>
 
             {/* Orb is now back */}
@@ -884,17 +884,16 @@ function BeforeMeetingForm() {
 
             <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ marginTop: '24px' }}>
                 <div className="form-group">
-                    <label>Your Question</label>
-                    <input
-                        type="text"
-                        className="form-textarea"
+                    {/* <label>Your Question</label> */}
+                    <textarea
+                        className="form-textarea equal-size"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         placeholder="Tap the orb to speak, or type your question here..."
                     />
                 </div>
                 <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()}>
-                    {isLoading ? <Loader /> : 'Get Briefing'}
+                    {isLoading ? <Loader /> : 'Get Insights'}
                 </button>
             </form>
 
@@ -1116,8 +1115,8 @@ function QuickCapture({ onMeetingSaved }) {
     return (
         <div className="view-container">
             <div className="dashboard-header">
-                <h1>Hi Marc, What's in your Mind ?</h1>
-                <p>Tap the orb to speak. The AI will automatically process and save your debrief when you're done.</p>
+                <h1>Hi Marc, What's on your Mind ?</h1>
+                <p></p>
             </div>
 
             <div className="quick-capture-layout">
@@ -1131,12 +1130,12 @@ function QuickCapture({ onMeetingSaved }) {
                     <div className="form-group">
                         {/* <label>Meeting Debrief Transcript</label> */}
                         <textarea
-                            className="form-textarea"
+                            className="form-textarea equal-size"
                             value={rawText}
                             onChange={(e) => setRawText(e.target.value)}
                             placeholder="Tap the orb to start speaking, or edit the transcript here..."
-                            style={{ minHeight: '150px' }}
                         />
+
                     </div>
                     <button type="submit" className="btn-primary" disabled={isLoading || !rawText.trim()}>
                         {isLoading ? <Loader /> : 'Capture'}

@@ -1,5 +1,3 @@
-/* src/ExecMindAgent.css */
-
 /* === 1. Root Variables & Global Styles === */
 :root {
     /* Purple-themed Color Palette matching your design */
@@ -496,6 +494,15 @@ body {
 
 .dashboard-header {
     margin-bottom: var(--space-2xl);
+    text-align: center;
+}
+
+.form-textarea.equal-size {
+    width: 100%;
+    /* The max-width is now controlled by the parent .standard-form, so it's not needed here */
+    min-height: 150px;
+    /* Set consistent height */
+    /* margin: 0 auto;  This is also no longer needed */
 }
 
 .dashboard-header h1 {
@@ -768,6 +775,12 @@ body {
     border: 1px solid var(--border-color);
     padding: var(--space-2xl);
     box-shadow: var(--shadow-sm);
+    /* --- Add these lines --- */
+    width: 100%;
+    max-width: 700px;
+    /* Sets a consistent max-width for the form */
+    margin: 0 auto;
+    /* Centers the form on the page */
 }
 
 .form-grid {
@@ -816,7 +829,7 @@ body {
 
 .form-group textarea,
 .form-textarea {
-    min-height: 120px;
+    min-height: 150px;
     line-height: 1.6;
 }
 
