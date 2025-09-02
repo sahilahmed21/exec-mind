@@ -184,6 +184,26 @@ body {
     color: var(--text-primary);
 }
 
+.avatar-image {
+    width: 40px;
+    /* Or whatever size your old 'M' avatar was */
+    height: 40px;
+    /* Keep it square */
+    border-radius: 50%;
+    /* Makes it circular */
+    object-fit: cover;
+    /* Ensures the image covers the area without distortion */
+    cursor: pointer;
+    border: 2px solid transparent;
+    /* Optional: adds a subtle border */
+    transition: border-color 0.2s ease;
+}
+
+.avatar-image:hover {
+    border-color: var(--accent-purple);
+    /* Optional: hover effect */
+}
+
 .user-avatar {
     width: 40px;
     height: 40px;
@@ -1453,19 +1473,25 @@ body {
 
 .voice-visualizer-container {
     display: flex;
+    /* Use flexbox */
     flex-direction: column;
+    /* Stack children vertically */
     align-items: center;
+    /* Center horizontally */
     justify-content: center;
+    /* Center vertically initially */
     cursor: pointer;
     border-radius: 50%;
+    padding: 20px;
+    border: 2px solid var(--border-color);
+    transition: all 0.3s ease;
     width: 200px;
     height: 200px;
-    background: linear-gradient(135deg, var(--background-secondary), var(--background-tertiary));
-    border: 2px solid var(--border-color);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: var(--shadow-md);
+    background-color: var(--background-secondary);
     position: relative;
-    overflow: hidden;
+    /* Keep relative for potential absolute children */
+    gap: 5px;
+    /* Add some spacing between items */
 }
 
 .voice-visualizer-container::before {
@@ -1736,4 +1762,27 @@ button:active {
 .speak-button {
     padding: 8px 16px;
     font-size: 0.9rem;
+}
+
+.voice-visualizer-container {
+    position: relative;
+}
+
+/* New styles for the microphone icon overlay */
+.mic-icon-overlay {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 48px;
+    margin-top: 55px;
+    color: var(--text-secondary);
+    z-index: 10;
+    pointer-events: none;
+    /* Allows clicks to go through to the container */
+    transition: color 0.3s ease;
+}
+
+.voice-visualizer-container.listening .mic-icon-overlay {
+    color: var(--accent-purple);
 }

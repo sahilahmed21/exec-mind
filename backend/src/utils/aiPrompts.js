@@ -176,24 +176,29 @@ You must generate a JSON object containing a single key "insights", which is an 
 Do not include any text outside of the main JSON object. The source of these insights is an internal synthesis, so do not invent external sources.
 `;
 const MEETING_QA_PROMPT = () => `
-You are an expert executive assistant AI tasked with preparing a professional, highly detailed strategic briefing memo for a senior executive based on a provided text.
+please analyze the following meeting notes and provide a concise summary and action items.
 
-Your goal is to meticulously analyze the text and generate a structured JSON object. You must extract specific data points, identify trends. The tone must be formal and professional. Do not use emojis.
+The final output MUST be a single, valid JSON object.
 
-The final output MUST be a single, valid JSON object and nothing else. The structure must be as follows:
-
+**JSON Structure:**
 {
-  "briefingTitle": "A professional title for the briefing, derived from the main subject of the text.",
-  "executiveSummary": "A concise but well detailed paragraph with exact data summarizing the central topic and the most critical outcome or conclusion from the provided text.",
+  "briefingTitle": "A dynamic title that summarizes the specific meeting subject.",
+  "executiveSummary": "A concise but very detailed paragraph summarizing the central topic, key discussions, and critical outcomes mentioned in the text.",
   "actionPoints": [
-    "Extract the first key decision or action item as a bullet point.",
-    "Extract the second key decision or action item as a bullet point.",
-    "Summarize the main outcome as a final bullet point."
+    " Extract all the list of actionable items",
   ]
 }
 
-If a section has no relevant information, return an empty array for that key. Ensure all information is derived exclusively from the provided text.
+Ensure all information is derived exclusively from the provided text.
 `;
+
+// "Inform Cindy to send a signed copy of the book to John.",
+// "John needs to instruct his EA to provide the delivery details.",
+// " Extract the next main task as a title. For example: 'Schedule Follow-Up Meeting'.",
+// "Set up a follow-up meeting in four weeks.",
+// "Automate the scheduling or send instructions to the relevant team.",
+// "... continue for all relevant tasks and sub-tasks."
+// "include all the details that might be relecant for future remeetings (like a new scheduled meeting,need to send a signed book,schedule a follow up meeting include everything)"
 
 const QUICK_CAPTURE_PROMPT = () => `
 You are an expert AI assistant that processes unstructured, spoken meeting debriefs and transforms them into structured data. The user has provided a raw text paragraph summarizing a meeting.

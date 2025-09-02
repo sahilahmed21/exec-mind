@@ -305,7 +305,7 @@ function Header({ userName, searchQuery, setSearchQuery, onSearch, isSearching }
             </form>
             <div className="header-actions">
                 <button className="header-icon-btn">🔔</button>
-                <div className="user-avatar">{userName.charAt(0)}</div>
+                <img src="/Marc_image.jpg" alt="User Avatar" className="avatar-image" />
             </div>
         </header>
     );
@@ -334,6 +334,16 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                         <h2 className="brand-name">ExecMind</h2>
                         <div className="brand-edition">MarcMind Edition</div>
                     </span>
+                </div>
+
+                {/* Move the collapse button here */}
+                <div className="sidebar-footer">
+                    <button className="collapse-btn" onClick={() => setIsCollapsed(!isCollapsed)}>
+                        <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
+                            <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
+                        </svg>
+                        <span className="nav-label">Collapse</span>
+                    </button>
                 </div>
 
                 <div className="sidebar-section">
@@ -379,19 +389,9 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                     </ul>
                 </div>
             </div>
-
-            <div className="sidebar-footer">
-                <button className="collapse-btn" onClick={() => setIsCollapsed(!isCollapsed)}>
-                    <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
-                        <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
-                    </svg>
-                    <span className="nav-label">Collapse</span>
-                </button>
-            </div>
         </aside>
     );
 }
-
 // === View Components ===
 function Dashboard({ setCurrentView }) {
     const [insights, setInsights] = useState([]);
@@ -835,17 +835,14 @@ function AfterMeetingForm({ meetings, onMeetingSaved }) {
 // In frontend/src/ExecMindAgent.jsx
 
 function BeforeMeetingForm() {
-    const [query, setQuery] = useState("");
+    const [query, setQuery] = useState("What was discussed in the Meeting with John from InsureTech?");
     const [answer, setAnswer] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
-    const [error, setError] = useState("");
-
+    const [error, setError] = useState('');
     const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-    const { isSpeaking, speak, cancel } = useTextToSpeech();
 
     const formRef = useRef();
 
-    // 🎤 Handle transcript auto-fill + auto-submit
     useEffect(() => {
         if (transcript) {
             setQuery(transcript);
@@ -857,56 +854,17 @@ function BeforeMeetingForm() {
         }
     }, [transcript, isListening]);
 
-    // 📝 Submit handler
     const handleSubmit = async (e) => {
         e.preventDefault();
-        cancel(); // stop previous narration
-        setIsLoading(true);
-        setError("");
-        setAnswer(null);
-
+        setIsLoading(true); setError(''); setAnswer(null);
         try {
             const { data } = await apiService.askAboutMeeting(query);
             setAnswer(data);
         } catch (err) {
-            const errorMessage =
-                err.response?.data?.answer ||
-                err.response?.data?.error ||
-                "Failed to get an answer.";
+            const errorMessage = err.response?.data?.answer || err.response?.data?.error || 'Failed to get an answer.';
             setError(errorMessage);
-        } finally {
-            setIsLoading(false);
         }
-    };
-
-    // ✅ Helper: check if array has items
-    const hasContent = (arr) => Array.isArray(arr) && arr.length > 0;
-
-    // 🔊 Convert structured answer into a narration string
-    const generateSpokenText = (briefing) => {
-        if (!briefing) return "";
-
-        let text = `Briefing on ${briefing.briefingTitle}. ${briefing.executiveSummary}. `;
-
-        if (hasContent(briefing.actionPoints)) {
-            text += "The key action points are: " + briefing.actionPoints.join(". ") + ". ";
-        }
-        if (hasContent(briefing.strategicQuestions)) {
-            text +=
-                "For the next meeting, consider these strategic questions: " +
-                briefing.strategicQuestions.join(". ");
-        }
-        return text;
-    };
-
-    // 🎙️ Speak/Stop button handler
-    const handleSpeakButtonClick = () => {
-        if (isSpeaking) {
-            cancel();
-        } else if (answer) {
-            const textToSpeak = generateSpokenText(answer);
-            speak(textToSpeak);
-        }
+        finally { setIsLoading(false); }
     };
 
     return (
@@ -916,7 +874,7 @@ function BeforeMeetingForm() {
                 <p>Ask the agent for a detailed briefing on any past meeting.</p>
             </div>
 
-            {/* 🎤 Voice capture orb */}
+            {/* Orb is now back */}
             <div className="quick-capture-layout">
                 <VoiceVisualizer
                     isListening={isListening}
@@ -924,99 +882,42 @@ function BeforeMeetingForm() {
                 />
             </div>
 
-            {/* 📝 Question form */}
-            <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ marginTop: "24px" }}>
+            <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ marginTop: '24px' }}>
                 <div className="form-group">
-                    {/* <label>Your Question</label> */}
+                    <label>Your Question</label>
                     <input
                         type="text"
                         className="form-textarea"
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
-                        placeholder="Ask the Agent for previous meeting Insights "
+                        placeholder="Tap the orb to speak, or type your question here..."
                     />
                 </div>
                 <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()}>
-                    {isLoading ? <Loader /> : "Get Insights"}
+                    {isLoading ? <Loader /> : 'Get Briefing'}
                 </button>
             </form>
 
             <StateDisplay isLoading={isLoading} error={error} />
 
-            {/* 📊 Results */}
             {answer && (
                 <div className="results-container briefing-card professional">
-                    <div className="briefing-header">
-                        <h2>{answer.briefingTitle}</h2>
-                        <button className="btn-secondary speak-button" onClick={handleSpeakButtonClick}>
-                            {isSpeaking ? (
-                                <>
-                                    <Volume2 className="w-5 h-5" /> Speaking...
-                                </>
-                            ) : (
-                                <>
-                                    <VolumeX className="w-5 h-5" /> Listen
-                                </>
-                            )}
-                        </button>
-                    </div>
-
+                    <h2>{answer.briefingTitle}</h2>
                     <p className="briefing-summary">{answer.executiveSummary}</p>
 
-                    <div className="briefing-grid">
-                        {hasContent(answer.quantitativeResults) && (
-                            <div className="briefing-section">
-                                <h3>Quantitative Results</h3>
-                                {answer.quantitativeResults.map((item, index) => (
-                                    <div className="metric-card" key={index}>
-                                        <div className="metric-value">{item.value}</div>
-                                        <div className="metric-label">{item.metric}</div>
-                                        <div className="metric-context">{item.context}</div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-
-                        {hasContent(answer.historicalData) && (
-                            <div className="briefing-section">
-                                <h3>Historical Data</h3>
-                                <ul>
-                                    {answer.historicalData.map((item, index) => (
-                                        <li key={index}>{item}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </div>
-
-                    {hasContent(answer.actionPoints) && (
+                    {answer.actionPoints && answer.actionPoints.length > 0 && (
                         <div className="briefing-section">
-                            <h3>Action Points</h3>
+                            <h3>Action Items</h3>
                             <ul>
-                                {answer.actionPoints.map((item, index) => (
-                                    <li key={index}>{item}</li>
-                                ))}
+                                {answer.actionPoints.map((item, index) => {
+                                    const isTitle = item.startsWith('✅');
+                                    return (
+                                        <li key={index} className={isTitle ? 'action-title' : 'action-sub-item'}>
+                                            {isTitle ? item.replace('✅', '').trim() : item}
+                                        </li>
+                                    );
+                                })}
                             </ul>
-                        </div>
-                    )}
-
-                    {hasContent(answer.strategicQuestions) && (
-                        <div className="briefing-section">
-                            <h3>Strategic Questions</h3>
-                            <ul>
-                                {answer.strategicQuestions.map((item, index) => (
-                                    <li key={index}>{item}</li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    {hasContent(answer.directQuotes) && (
-                        <div className="briefing-section">
-                            <h3>Direct Quote</h3>
-                            <blockquote className="briefing-quote">
-                                "{answer.directQuotes[0]}"
-                            </blockquote>
                         </div>
                     )}
                 </div>
@@ -1024,6 +925,12 @@ function BeforeMeetingForm() {
         </div>
     );
 }
+
+
+
+
+
+
 
 
 // --- CaptureIdeaForm (Updated) ---
@@ -1209,7 +1116,7 @@ function QuickCapture({ onMeetingSaved }) {
     return (
         <div className="view-container">
             <div className="dashboard-header">
-                <h1>Quick Capture</h1>
+                <h1>Hi Marc, What's in your Mind ?</h1>
                 <p>Tap the orb to speak. The AI will automatically process and save your debrief when you're done.</p>
             </div>
 
