@@ -12,7 +12,7 @@ exports.createMeetingSummary = async (req, res) => {
         const newMeeting = new Meeting({
             title,
             participants,
-            date,
+            date: new Date(),
             userId: req.user._id,
             summary: aiAnalysis.summary,
             keyPoints: aiAnalysis.keyPoints,
