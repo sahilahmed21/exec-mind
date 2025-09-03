@@ -1268,7 +1268,7 @@ function LiveDemo() {
     return (
         <div className="view-container live-demo-container">
             <div className="dashboard-header">
-                <h1>AI Executive Assistant</h1>
+                <h1>AI Cindy</h1>
             </div>
 
             <div className="live-demo-orb-wrapper">
