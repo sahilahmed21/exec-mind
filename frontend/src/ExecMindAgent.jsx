@@ -8,6 +8,13 @@ import useTextToSpeech from './hooks/useTextToSpeech';
 import { Volume2, VolumeX, Play, Pause } from "lucide-react";
 
 // === Icon Components ===
+const IndexCardIcon = () => (
+    <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
+        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zM4 6h16v2H4V6z" />
+    </svg>
+);
+
+
 const HomeIcon = () => (
     <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
         <path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3l9-8z" />
@@ -221,6 +228,7 @@ export function ExecMindAgent({ onLogout }) {
             case 'dashboard': return <Dashboard setCurrentView={setCurrentView} />;
             case 'liveDemo': return <LiveDemo />;
             case 'quickCapture': return <QuickCapture onMeetingSaved={addMeeting} />;
+            case 'marcsIndexCards': return <MarcsIndexCards />;
             case 'fridayNotes': return <FridayNotesGenerator meetings={meetings} ideas={ideas} drafts={drafts} />;
             case 'viewDraft': return <ViewDraft draftId={selectedDraftId} onBack={() => setCurrentView('fridayNotes')} />;
             case 'searchResults': return <SearchResults query={searchQuery} results={searchResults} onViewDraft={handleViewDraft} />;
@@ -313,12 +321,13 @@ function Header({ userName, searchQuery, setSearchQuery, onSearch, isSearching }
 }
 
 // --- Sidebar (Updated) ---
+
 function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, isCollapsed, setIsCollapsed }) {
-    // This component now receives drafts as a prop, no longer fetches its own data
     const shortcuts = [
         { id: 'dashboard', label: 'Dashboard', icon: <HomeIcon /> },
         { id: 'liveDemo', label: 'Live Demo', icon: '🎙️' },
         { id: 'quickCapture', label: 'Quick Capture', icon: <FlashIcon /> },
+        { id: 'marcsIndexCards', label: 'Index Cards', icon: <IndexCardIcon /> },
         { id: 'beforeMeeting', label: 'Meeting Insights', icon: <BriefingIcon /> },
         { id: 'fridayNotes', label: 'Friday Notes', icon: <NoteIcon /> },
         { id: 'captureIdea', label: 'Capture Idea', icon: <BulbIcon /> },
@@ -330,24 +339,24 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
     return (
         <aside className={`sidebar ${isCollapsed ? 'collapsed' : ''}`}>
             <div>
+                {/* Header */}
                 <div className="sidebar-header">
                     <div className="brand-logo">EM</div>
-                    <span className="brand-text">
-                        <h2 className="brand-name">ExecMind</h2>
-                        <div className="brand-edition">MarcMind Edition</div>
-                    </span>
-                </div>
-
-                {/* Move the collapse button here */}
-                <div className="sidebar-footer">
+                    <div className="brand-text-wrapper">
+                        <span className="brand-text">
+                            <h2 className="brand-name">ExecMind</h2>
+                            <div className="brand-edition">MarcMind Edition</div>
+                        </span>
+                    </div>
+                    {/* Collapse Button (correct placement) */}
                     <button className="collapse-btn" onClick={() => setIsCollapsed(!isCollapsed)}>
                         <svg viewBox="0 0 24 24" fill="currentColor" height="1em" width="1em">
                             <path d="M15.41 16.59L10.83 12l4.58-4.59L14 6l-6 6 6 6 1.41-1.41z" />
                         </svg>
-                        <span className="nav-label">Collapse</span>
                     </button>
                 </div>
 
+                {/* Shortcuts */}
                 <div className="sidebar-section">
                     <h3 className="sidebar-title">SHORTCUTS</h3>
                     <ul className="nav-menu">
@@ -356,6 +365,7 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                                 key={item.id}
                                 className={`nav-item ${currentView === item.id ? 'active' : ''}`}
                                 onClick={() => setCurrentView(item.id)}
+                                title={isCollapsed ? item.label : ''}
                             >
                                 {item.icon}
                                 <span className="nav-label">{item.label}</span>
@@ -364,6 +374,7 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                     </ul>
                 </div>
 
+                {/* Recent Drafts */}
                 <div className="sidebar-section">
                     <h3 className="sidebar-title">RECENT DRAFTS</h3>
                     <ul className="pending-actions-list">
@@ -378,7 +389,10 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                                     <div className="pending-details">
                                         <div className="pending-title">{draft.title}</div>
                                         <div className="pending-meta">
-                                            {new Date(draft.weekOf).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            {new Date(draft.weekOf).toLocaleDateString('en-US', {
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
                                         </div>
                                     </div>
                                 </li>
@@ -391,16 +405,22 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                     </ul>
                 </div>
             </div>
+
+            {/* Footer (Logout only) */}
             <div className="sidebar-footer">
                 <div className="nav-item" onClick={onLogout} title={isCollapsed ? 'Logout' : ''}>
-                    <svg viewBox="0 0 24 24" height="1em" width="1em" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"></path></svg>
+                    <svg viewBox="0 0 24 24" height="1em" width="1em" fill="currentColor">
+                        <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 
+                        1.1.9 2 2 2h8v-2H4V5z"></path>
+                    </svg>
                     <span className="nav-label">Logout</span>
                 </div>
             </div>
-
         </aside>
     );
 }
+
+
 // === View Components ===
 function Dashboard({ setCurrentView }) {
     const [insights, setInsights] = useState([]);
@@ -843,6 +863,7 @@ function AfterMeetingForm({ meetings, onMeetingSaved }) {
 
 // In frontend/src/ExecMindAgent.jsx
 
+
 function BeforeMeetingForm() {
     const [query, setQuery] = useState("");
     const [answer, setAnswer] = useState(null);
@@ -854,9 +875,7 @@ function BeforeMeetingForm() {
 
     // Auto-submit when speech ends
     useEffect(() => {
-        if (transcript) {
-            setQuery(transcript);
-        }
+        if (transcript) setQuery(transcript);
         if (!isListening && transcript.trim()) {
             if (formRef.current) {
                 formRef.current.requestSubmit();
@@ -993,6 +1012,7 @@ function BeforeMeetingForm() {
         </div>
     );
 }
+
 
 
 // --- CaptureIdeaForm (Updated) ---
@@ -1135,28 +1155,38 @@ function QuickCapture({ onMeetingSaved }) {
     const [error, setError] = useState('');
     const [successMessage, setSuccessMessage] = useState('');
     const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-
-    // Create a ref for the form to trigger submission
     const formRef = useRef();
 
+    // ✅ ADDED STATE TO HOLD THE LIST OF RECENT MEETINGS
+    const [recentMeetings, setRecentMeetings] = useState([]);
+
+    // ✅ ADDED EFFECT TO FETCH MEETINGS ON LOAD
     useEffect(() => {
-        // Update the textarea with the transcript as it comes in
+        const fetchRecentMeetings = async () => {
+            try {
+                const { data } = await apiService.getMeetings();
+                setRecentMeetings(data);
+            } catch (err) {
+                console.error("Failed to fetch recent meetings for QuickCapture", err);
+            }
+        };
+        fetchRecentMeetings();
+    }, []);
+
+
+    useEffect(() => {
         if (transcript) {
             setRawText(transcript);
         }
-
-        // When listening stops and there's a transcript, automatically submit the form
         if (!isListening && transcript.trim()) {
-            // Check if the form ref is attached before submitting
             if (formRef.current) {
-                // Programmatically click the submit button
                 formRef.current.requestSubmit();
             }
         }
     }, [transcript, isListening]);
 
     const handleSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission
+        e.preventDefault();
         if (!rawText.trim()) {
             setError("Please provide a summary to process.");
             return;
@@ -1164,15 +1194,21 @@ function QuickCapture({ onMeetingSaved }) {
         setIsLoading(true); setError(''); setSuccessMessage('');
         try {
             const { data } = await apiService.quickCaptureMeeting(rawText);
-            // This is the success message you liked, showing the title
             setSuccessMessage(`Successfully captured and saved meeting: "${data.title}"`);
             setRawText('');
-            onMeetingSaved(data); // <-- This updates the central list
+            onMeetingSaved(data);
+            // ✅ UPDATE THE LOCAL LIST INSTANTLY
+            setRecentMeetings(prev => [data, ...prev]);
         } catch (err) {
             setError(err.response?.data?.error || 'Failed to process the summary.');
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const truncateText = (text, maxLength) => {
+        if (text.length <= maxLength) return text;
+        return text.substr(0, text.lastIndexOf(' ', maxLength)) + '...';
     };
 
     return (
@@ -1187,18 +1223,14 @@ function QuickCapture({ onMeetingSaved }) {
                     isListening={isListening}
                     onClick={isListening ? stopListening : startListening}
                 />
-
-                {/* The form and button are back, but submission is automatic */}
                 <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
                     <div className="form-group">
-                        {/* <label>Meeting Debrief Transcript</label> */}
                         <textarea
                             className="form-textarea equal-size"
                             value={rawText}
                             onChange={(e) => setRawText(e.target.value)}
                             placeholder="Tap the orb to start speaking, or edit the transcript here..."
                         />
-
                     </div>
                     <button type="submit" className="btn-primary" disabled={isLoading || !rawText.trim()}>
                         {isLoading ? <Loader /> : 'Capture'}
@@ -1207,9 +1239,32 @@ function QuickCapture({ onMeetingSaved }) {
             </div>
 
             <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
+
+            {/* ✅ ADDED THIS ENTIRE "RECENTLY PROCESSED" SECTION */}
+            <div className="recent-ideas-container">
+                <h3 className="sidebar-title">RECENTLY PROCESSED</h3>
+                <div className="sources-list">
+                    {recentMeetings.slice(0, 5).map(meeting => (
+                        <div key={meeting._id} className="source-item">
+                            <div className="type-indicator meeting"></div>
+                            <div className="source-details">
+                                <div className="source-header">
+                                    <span className="source-title">{meeting.title}</span>
+                                </div>
+                                <p className="source-summary">{truncateText(meeting.summary, 120)}</p>
+                                <div className="insight-meta" style={{ marginTop: '8px' }}>
+                                    <span>{new Date(meeting.date).toLocaleDateString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
         </div>
     );
 }
+
+
 function LiveDemo() {
     // ✅ Re-added conversation state to store the AI's response
     const [conversation, setConversation] = useState([]);
@@ -1268,7 +1323,7 @@ function LiveDemo() {
     return (
         <div className="view-container live-demo-container">
             <div className="dashboard-header">
-                <h1>AI Cindy</h1>
+                <h1>AI Executive Agent</h1>
             </div>
 
             <div className="live-demo-orb-wrapper">
@@ -1276,6 +1331,285 @@ function LiveDemo() {
                     isListening={isListening || isLoading || isSpeaking}
                     onClick={isListening ? stopListening : startListening}
                 />
+            </div>
+        </div>
+    );
+}
+// Add this new component to ExecMindAgent.jsx
+
+function MarcsIndexCards() {
+    const styles = {
+        container: {
+            maxWidth: '1200px',
+            margin: '0 auto',
+            padding: '20px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            backgroundColor: '#f8fafc',
+            minHeight: '100vh'
+        },
+        header: {
+            textAlign: 'center',
+            marginBottom: '40px',
+            padding: '40px 0'
+        },
+        title: {
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: '#1a202c',
+            margin: '0 0 12px 0'
+        },
+        subtitle: {
+            fontSize: '1.1rem',
+            color: '#64748b',
+            margin: 0
+        },
+        mainContainer: {
+            backgroundColor: 'white',
+            borderRadius: '16px',
+            padding: '40px',
+            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+            border: '1px solid #e2e8f0'
+        },
+        section: {
+            marginBottom: '48px'
+        },
+        sectionTitle: {
+            fontSize: '0.875rem',
+            fontWeight: '600',
+            color: '#64748b',
+            letterSpacing: '0.05em',
+            textTransform: 'uppercase',
+            marginBottom: '24px'
+        },
+        cardRow: {
+            display: 'flex',
+            alignItems: 'center',
+            marginBottom: '20px',
+            gap: '20px'
+        },
+        rowLabel: {
+            fontSize: '1rem',
+            fontWeight: '500',
+            color: '#475569',
+            minWidth: '80px'
+        },
+        pillsContainer: {
+            display: 'flex',
+            gap: '12px',
+            flexWrap: 'wrap'
+        },
+        pill: {
+            padding: '8px 16px',
+            borderRadius: '20px',
+            fontSize: '0.875rem',
+            fontWeight: '500',
+            border: 'none',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            color: 'white'
+        },
+        pillBlue: {
+            backgroundColor: '#3b82f6',
+        },
+        pillGreen: {
+            backgroundColor: '#10b981',
+        },
+        pillRed: {
+            backgroundColor: '#ef4444',
+        },
+        noteItem: {
+            backgroundColor: '#f8fafc',
+            border: '1px solid #e2e8f0',
+            borderRadius: '12px',
+            padding: '24px',
+            marginBottom: '16px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+            gap: '24px',
+            transition: 'all 0.2s ease'
+        },
+        noteContent: {
+            flex: 1
+        },
+        noteTitle: {
+            fontSize: '1.125rem',
+            fontWeight: '600',
+            color: '#1a202c',
+            marginBottom: '8px'
+        },
+        noteSubtitle: {
+            fontSize: '0.925rem',
+            color: '#64748b',
+            marginBottom: '4px',
+            lineHeight: '1.4'
+        },
+        notePills: {
+            display: 'flex',
+            gap: '8px',
+            flexWrap: 'wrap',
+            alignItems: 'flex-start'
+        },
+        smallPill: {
+            padding: '4px 12px',
+            borderRadius: '12px',
+            fontSize: '0.75rem',
+            fontWeight: '500',
+            color: 'white'
+        }
+    };
+
+    const categories = [
+        {
+            label: 'General:',
+            items: [
+                { name: 'Techxchange', type: 'blue' },
+                { name: 'Tandem', type: 'blue' },
+                { name: 'Insurance', type: 'blue' },
+                { name: 'HR', type: 'blue' },
+                { name: 'AI', type: 'blue' }
+            ]
+        },
+        {
+            label: 'People:',
+            items: [
+                { name: 'John', type: 'green' },
+                { name: 'Ken', type: 'green' },
+                { name: 'Barbara', type: 'green' },
+                { name: 'Arleen', type: 'green' },
+                { name: 'Rajesh', type: 'green' }
+
+            ]
+        },
+        {
+            label: 'Meeting:',
+            items: [
+                { name: 'Dinner', type: 'red' },
+                { name: 'Board', type: 'red' },
+                { name: 'Strategy', type: 'red' }
+            ]
+        }
+    ];
+
+    const recentNotes = [
+        {
+            title: 'Discuss with Rajesh',
+            subtitles: [
+                'Ask Rajesh about Techxchange',
+                'Confirm Dinner at Indian Restaurant',
+                'Ask him about Tandem dates'
+            ],
+            tags: [
+                { name: 'Rajesh', type: 'green' },
+                { name: 'Dinner', type: 'red' },
+                { name: 'Techxchange', type: 'blue' }
+            ]
+        },
+        {
+            title: 'Board meeting',
+            subtitles: [
+                'Finalise Strategic direction to be presented during board meeting'
+            ],
+            tags: [
+                { name: 'Board', type: 'red' },
+                { name: 'Strategy', type: 'red' }
+            ]
+        },
+        {
+            title: 'Meeting with Arleen',
+            subtitles: [
+                'Discuss Next quarter strategy and roadmap with Arleen'
+            ],
+            tags: [
+                { name: 'Strategy', type: 'red' },
+                { name: 'Arleen', type: 'green' }
+            ]
+        }
+    ];
+
+    const getPillStyle = (type, isSmall = false) => {
+        const baseStyle = isSmall ? styles.smallPill : styles.pill;
+        const colorStyle = type === 'blue' ? styles.pillBlue :
+            type === 'green' ? styles.pillGreen :
+                styles.pillRed;
+        return { ...baseStyle, ...colorStyle };
+    };
+
+    return (
+        <div style={styles.container}>
+            <div style={styles.header}>
+                <h1 style={styles.title}>Marc's Index Cards</h1>
+                <p style={styles.subtitle}>A visual canvas of categorized thoughts and recent notes.</p>
+            </div>
+
+            <div style={styles.mainContainer}>
+                {/* Index Cards Section */}
+                <div style={styles.section}>
+                    <h3 style={styles.sectionTitle}>Marc's Index Cards</h3>
+
+                    {categories.map((category, idx) => (
+                        <div key={idx} style={styles.cardRow}>
+                            <span style={styles.rowLabel}>{category.label}</span>
+                            <div style={styles.pillsContainer}>
+                                {category.items.map((item, itemIdx) => (
+                                    <div
+                                        key={itemIdx}
+                                        style={getPillStyle(item.type)}
+                                        onMouseEnter={(e) => {
+                                            e.target.style.transform = 'translateY(-2px)';
+                                            e.target.style.boxShadow = '0 4px 8px rgba(0, 0, 0, 0.15)';
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.target.style.transform = 'translateY(0)';
+                                            e.target.style.boxShadow = 'none';
+                                        }}
+                                    >
+                                        {item.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Recent Notes Section */}
+                <div style={styles.section}>
+                    <h3 style={styles.sectionTitle}>Recent Ones</h3>
+
+                    {recentNotes.map((note, idx) => (
+                        <div
+                            key={idx}
+                            style={styles.noteItem}
+                            onMouseEnter={(e) => {
+                                e.target.style.backgroundColor = '#f1f5f9';
+                                e.target.style.borderColor = '#cbd5e1';
+                            }}
+                            onMouseLeave={(e) => {
+                                e.target.style.backgroundColor = '#f8fafc';
+                                e.target.style.borderColor = '#e2e8f0';
+                            }}
+                        >
+                            <div style={styles.noteContent}>
+                                <div style={styles.noteTitle}>{note.title}</div>
+                                {note.subtitles.map((subtitle, subIdx) => (
+                                    <div key={subIdx} style={styles.noteSubtitle}>
+                                        {subtitle}
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={styles.notePills}>
+                                {note.tags.map((tag, tagIdx) => (
+                                    <div
+                                        key={tagIdx}
+                                        style={getPillStyle(tag.type, true)}
+                                    >
+                                        {tag.name}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
         </div>
     );

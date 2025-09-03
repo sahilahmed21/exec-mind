@@ -1169,8 +1169,11 @@ body {
 }
 
 .source-details {
+    display: flex;
+    flex-direction: column;
     flex: 1;
     min-width: 0;
+    /* Prevents text overflow issues */
 }
 
 .source-header {
@@ -1192,17 +1195,22 @@ body {
     color: var(--text-primary);
     font-weight: var(--font-weight-semibold);
     font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
 }
 
 .source-summary {
     margin: 0;
     color: var(--text-secondary);
-    line-height: 1.6;
-    font-size: 14px;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    -webkit-box-orient: vertical;
+    line-height: 1.5;
     overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    /* Number of lines to show */
+    -webkit-box-orient: vertical;
 }
 
 .generation-form {
@@ -1813,4 +1821,79 @@ button:active {
     justify-content: center;
     padding-bottom: 10%;
     /* Move it up slightly from the absolute center */
+}
+
+.index-cards-container {
+    background-color: var(--background-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 32px;
+}
+
+.index-cards-section {
+    margin-bottom: 40px;
+}
+
+.card-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.card-row-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+    width: 80px;
+    /* Aligns the pill groups */
+}
+
+.card-pills-container {
+    display: flex;
+    gap: 8px;
+}
+
+.card-pill {
+    width: 60px;
+    height: 30px;
+    border-radius: 15px;
+    /* Creates the oval shape */
+    opacity: 0.7;
+}
+
+.card-pill.blue {
+    background-color: var(--accent-blue);
+}
+
+.card-pill.green {
+    background-color: var(--accent-green);
+}
+
+.card-pill.red {
+    background-color: var(--accent-red);
+}
+
+.recent-notes-section .note-item {
+    background-color: var(--background-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+.recent-notes-section .note-item.placeholder {
+    height: 80px;
+}
+
+.note-title {
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+.card-pills-container.inline .card-pill {
+    width: 40px;
+    height: 20px;
+    border-radius: 10px;
 }
