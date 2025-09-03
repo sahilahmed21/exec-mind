@@ -1,5 +1,5 @@
 // backend/src/services/aiService.js
-
+const fs = require('fs');
 const OpenAI = require('openai');
 const { NEWSLETTER_PROMPT, QUICK_CAPTURE_PROMPT, MEETING_QA_PROMPT, MEETING_SUMMARY_PROMPT, IDEA_ANALYSIS_PROMPT, MEETING_BRIEF_PROMPT, IDEA_SYNTHESIS_PROMPT, EXCERPT_FINDER_PROMPT, WEEKLY_INSIGHT_GENERATION_PROMPT, DOCUMENT_ANALYSIS_PROMPT } = require('../utils/aiPrompts');
 
@@ -144,10 +144,28 @@ class AIService {
      * In a real app, use a service like AssemblyAI, Deepgram, or OpenAI's Whisper.
      */
     async transcribeAudio(filePath) {
-        console.log(`[MOCK] Transcribing audio from: ${filePath}`);
-        // Simulate transcription
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        return "This is a transcribed summary of the audio recording. The combined ratio is down, and adding two more underwriters is key. Also, remember the agent event in December.";
+        try {
+            if (!fs.existsSync(filePath)) {
+                throw new Error(`Audio file not found at: ${filePath}`);
+            }
+
+            const transcription = await this.openai.audio.transcriptions.create({
+                file: fs.createReadStream(filePath),
+                model: "whisper-1",
+            });
+
+            // Clean up the uploaded file after transcription
+            fs.unlinkSync(filePath);
+
+            return transcription.text;
+        } catch (error) {
+            console.error('Error transcribing audio with Whisper:', error);
+            // Clean up the file even if an error occurs
+            if (fs.existsSync(filePath)) {
+                fs.unlinkSync(filePath);
+            }
+            throw new Error('Failed to transcribe audio.');
+        }
     }
 
     async answerMeetingQuestion({ question, context }) {
@@ -164,6 +182,21 @@ class AIService {
         const systemPrompt = MEETING_QA_PROMPT();
         return this._callOpenAI(prompt, systemPrompt);
     }
+    async generateSpeech(text) {
+        try {
+            const mp3 = await this.openai.audio.speech.create({
+                model: "tts-1",
+                voice: "nova",
+                input: text,
+            });
+            // Return the response body stream directly
+            return mp3.body;
+        } catch (error) {
+            console.error('Error generating speech:', error);
+            throw new Error('Failed to generate speech.');
+        }
+    }
+
     async synthesizeIdeas({ query, contextIdeas }) {
         const prompt = `
         **User's Query:** "${query}"

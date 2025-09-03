@@ -102,8 +102,13 @@ export default {
     quickCaptureMeeting(rawText) {
         return apiClient.post('/meetings/quick-capture', { rawText });
     },
-    getDemoResponse(prompt) {
-        return apiClient.post('/demo/chat', { prompt });
+    getDemoResponse(turn) {
+        return apiClient.post('/demo/chat', { turn });
     },
+    generateSpeech(text) {
+        // We expect an audio blob in return
+        return apiClient.post('/audio/speak', { text }, { responseType: 'blob' });
+    },
+
 
 };

@@ -23,15 +23,19 @@ const useSpeechRecognition = () => {
         recognition.lang = 'en-US';
 
         recognition.onresult = (event) => {
+            let interimTranscript = '';
             let finalTranscript = '';
+
             for (let i = event.resultIndex; i < event.results.length; ++i) {
+                const transcriptPart = event.results[i][0].transcript;
                 if (event.results[i].isFinal) {
-                    finalTranscript += event.results[i][0].transcript;
+                    finalTranscript += transcriptPart;
+                } else {
+                    interimTranscript += transcriptPart;
                 }
             }
-            if (finalTranscript) {
-                setTranscript(prev => prev ? `${prev} ${finalTranscript.trim()}` : finalTranscript.trim());
-            }
+            // This ensures a clean, final transcript for each utterance
+            setTranscript(finalTranscript.trim());
         };
 
         recognition.onend = () => {
@@ -41,8 +45,7 @@ const useSpeechRecognition = () => {
         recognition.onerror = (event) => {
             console.error('Speech recognition error:', event.error);
             setIsListening(false);
-        }
-
+        };
     }, []);
 
     const startListening = () => {
@@ -65,6 +68,7 @@ const useSpeechRecognition = () => {
         transcript,
         startListening,
         stopListening,
+        setTranscript, // Allow manual reset from component
     };
 };
 

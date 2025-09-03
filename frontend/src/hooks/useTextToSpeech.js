@@ -1,84 +1,109 @@
 import { useState, useEffect, useRef } from 'react';
+import apiService from '../apiService';
 
 const useTextToSpeech = () => {
     const [isSpeaking, setIsSpeaking] = useState(false);
+    const audioRef = useRef(null);
     const synthRef = useRef(window.speechSynthesis);
     const voicesRef = useRef([]);
 
-    // Function to load voices
+    // Function to load available system voices
     const loadVoices = () => {
         voicesRef.current = synthRef.current.getVoices();
     };
 
     useEffect(() => {
         loadVoices();
-        // Voices are often loaded asynchronously, so we need to listen for the event
         if (synthRef.current.onvoiceschanged !== undefined) {
             synthRef.current.onvoiceschanged = loadVoices;
         }
 
-        // Cleanup on component unmount
+        // Cleanup on unmount
         return () => {
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
             if (synthRef.current.speaking) {
                 synthRef.current.cancel();
             }
         };
     }, []);
 
-    const speak = (text) => {
-        const synth = synthRef.current;
-        if (synth.speaking) {
-            console.error('SpeechSynthesis is already speaking.');
-            return;
-        }
-        if (text !== '') {
-            const utterance = new SpeechSynthesisUtterance(text);
+    const speak = async (text) => {
+        if (isSpeaking || !text) return;
 
-            // --- Voice Selection Logic (Updated for Windows Female Voices) ---
-            const preferredVoices = [
-                // Prioritize high-quality female voices
-                "Microsoft Zira - English (United States)", // Windows 10/11 Female
-                "Microsoft Jessa - English (United States)", // Another Windows Female option
-                "Google US English", // Common on Chrome/Android (Female)
-                "Samantha",          // Common on Apple devices (Female)
-                "Microsoft David - English (United States)" // Male fallback for Windows
-            ];
+        // First, cancel any browser-based speech that might be stuck
+        synthRef.current.cancel();
 
-            let selectedVoice = voicesRef.current.find(voice => preferredVoices.includes(voice.name));
-            // Fallback to the first available US English voice if preferred are not found
-            if (!selectedVoice) {
-                selectedVoice = voicesRef.current.find(voice => voice.lang === 'en-US');
+        setIsSpeaking(true);
+        try {
+            // Using our high-quality OpenAI TTS backend
+            const { data: audioBlob } = await apiService.generateSpeech(text);
+            const audioUrl = URL.createObjectURL(audioBlob);
+
+            if (audioRef.current) {
+                audioRef.current.pause();
             }
-            utterance.voice = selectedVoice;
 
-            // --- Cadence and Pitch Adjustment ---
-            utterance.pitch = 1;     // From 0 to 2 (1 is default)
-            utterance.rate = 1;   // From 0.1 to 10 (0.95 is slightly slower and more natural)
-            utterance.volume = 0.5;    // From 0 to 1
+            const newAudio = new Audio(audioUrl);
+            audioRef.current = newAudio;
 
-            utterance.onend = () => {
+            newAudio.play();
+            newAudio.onended = () => {
                 setIsSpeaking(false);
+                URL.revokeObjectURL(audioUrl);
             };
-            utterance.onerror = (event) => {
-                console.error('SpeechSynthesisUtterance.onerror', event);
-                setIsSpeaking(false);
-            };
-
-            synth.speak(utterance);
-            setIsSpeaking(true);
+        } catch (error) {
+            console.error('Failed to play speech via API, falling back to browser voice.', error);
+            // --- Fallback to browser voice if API fails ---
+            speakWithBrowserVoice(text);
         }
     };
 
+    const speakWithBrowserVoice = (text) => {
+        const utterance = new SpeechSynthesisUtterance(text);
+
+        // --- Voice Selection Logic for MALE voice ---
+        const preferredMaleVoices = [
+            "Microsoft David - English (United States)", // Windows
+            "Alex", // macOS
+            "Google US English" // Try this on Chrome, might be male
+        ];
+
+        let selectedVoice = voicesRef.current.find(voice => preferredMaleVoices.includes(voice.name));
+
+        // If no preferred voices found, search for any US English male voice
+        if (!selectedVoice) {
+            selectedVoice = voicesRef.current.find(voice => voice.lang === 'en-US' && voice.name.toLowerCase().includes('male'));
+        }
+        // Final fallback
+        if (!selectedVoice) {
+            selectedVoice = voicesRef.current.find(voice => voice.lang === 'en-US');
+        }
+
+        utterance.voice = selectedVoice;
+        utterance.pitch = 0.9; // Lower pitch slightly for a more natural male tone
+        utterance.rate = 0.95;
+
+        utterance.onend = () => setIsSpeaking(false);
+        utterance.onerror = (event) => {
+            console.error('Browser speech synthesis error:', event);
+            setIsSpeaking(false);
+        };
+
+        synthRef.current.speak(utterance);
+    }
+
     const cancel = () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
         synthRef.current.cancel();
         setIsSpeaking(false);
     };
 
-    return {
-        isSpeaking,
-        speak,
-        cancel,
-    };
+    return { isSpeaking, speak, cancel };
 };
 
 export default useTextToSpeech;

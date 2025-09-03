@@ -391,6 +391,13 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
                     </ul>
                 </div>
             </div>
+            <div className="sidebar-footer">
+                <div className="nav-item" onClick={onLogout} title={isCollapsed ? 'Logout' : ''}>
+                    <svg viewBox="0 0 24 24" height="1em" width="1em" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"></path></svg>
+                    <span className="nav-label">Logout</span>
+                </div>
+            </div>
+
         </aside>
     );
 }
@@ -842,9 +849,10 @@ function BeforeMeetingForm() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-
+    const { isSpeaking, speak, cancel } = useTextToSpeech();
     const formRef = useRef();
 
+    // Auto-submit when speech ends
     useEffect(() => {
         if (transcript) {
             setQuery(transcript);
@@ -856,27 +864,63 @@ function BeforeMeetingForm() {
         }
     }, [transcript, isListening]);
 
+    // Handle form submit
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setIsLoading(true); setError(''); setAnswer(null);
+        cancel();
+        setIsLoading(true);
+        setError('');
+        setAnswer(null);
+
         try {
             const { data } = await apiService.askAboutMeeting(query);
             setAnswer(data);
         } catch (err) {
-            const errorMessage = err.response?.data?.answer || err.response?.data?.error || 'Failed to get an answer.';
+            const errorMessage =
+                err.response?.data?.answer ||
+                err.response?.data?.error ||
+                "Failed to get an answer.";
             setError(errorMessage);
+        } finally {
+            setIsLoading(false);
         }
-        finally { setIsLoading(false); }
     };
+
+    // Generate text for TTS
+    const generateSpokenText = (briefing) => {
+        if (!briefing) return "";
+        let text = `${briefing.briefingTitle}. ${briefing.executiveSummary}. `;
+        if (Array.isArray(briefing.actionItems) && briefing.actionItems.length > 0) {
+            text += "Key Action Items include: ";
+            briefing.actionItems.forEach((action) => {
+                text += `${action.title}. ${action.details.join(". ")}. `;
+            });
+        }
+        return text;
+    };
+
+    // Speak/stop summary
+    const handleSpeakButtonClick = () => {
+        if (isSpeaking) {
+            cancel();
+        } else {
+            const textToSpeak = generateSpokenText(answer);
+            speak(textToSpeak);
+        }
+    };
+
+    // Utility: check array content
+    const hasContent = (arr) => Array.isArray(arr) && arr.length > 0;
 
     return (
         <div className="view-container">
+            {/* Header */}
             <div className="dashboard-header">
                 <h1>Meeting Insights</h1>
                 <p>Ask the agent for a detailed briefing on any previous meeting.</p>
             </div>
 
-            {/* Orb is now back */}
+            {/* Voice Capture */}
             <div className="quick-capture-layout">
                 <VoiceVisualizer
                     isListening={isListening}
@@ -884,9 +928,14 @@ function BeforeMeetingForm() {
                 />
             </div>
 
-            <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ marginTop: '24px' }}>
+            {/* Form */}
+            <form
+                ref={formRef}
+                onSubmit={handleSubmit}
+                className="standard-form"
+                style={{ marginTop: "24px" }}
+            >
                 <div className="form-group">
-                    {/* <label>Your Question</label> */}
                     <textarea
                         className="form-textarea equal-size"
                         value={query}
@@ -894,31 +943,49 @@ function BeforeMeetingForm() {
                         placeholder="Tap the orb to speak, or type your question here..."
                     />
                 </div>
-                <button type="submit" className="btn-primary" disabled={isLoading || !query.trim()}>
-                    {isLoading ? <Loader /> : 'Get Insights'}
+                <button
+                    type="submit"
+                    className="btn-primary"
+                    disabled={isLoading || !query.trim()}
+                >
+                    {isLoading ? <Loader /> : "Get Insights"}
                 </button>
             </form>
 
+            {/* State display */}
             <StateDisplay isLoading={isLoading} error={error} />
 
+            {/* Answer display */}
             {answer && (
                 <div className="results-container briefing-card professional">
-                    <h2>{answer.briefingTitle}</h2>
+                    <div className="briefing-header">
+                        <h2>{answer.briefingTitle}</h2>
+                        <button
+                            className="btn-secondary speak-button"
+                            onClick={handleSpeakButtonClick}
+                        >
+                            {isSpeaking ? <VolumeX size={16} /> : <Volume2 size={16} />}
+                            <span style={{ marginLeft: "8px" }}>
+                                {isSpeaking ? "Stop Speaking" : "Speak Summary"}
+                            </span>
+                        </button>
+                    </div>
+
                     <p className="briefing-summary">{answer.executiveSummary}</p>
 
-                    {answer.actionPoints && answer.actionPoints.length > 0 && (
+                    {hasContent(answer.actionItems) && (
                         <div className="briefing-section">
-                            <h3>Action Items</h3>
-                            <ul>
-                                {answer.actionPoints.map((item, index) => {
-                                    const isTitle = item.startsWith('✅');
-                                    return (
-                                        <li key={index} className={isTitle ? 'action-title' : 'action-sub-item'}>
-                                            {isTitle ? item.replace('✅', '').trim() : item}
-                                        </li>
-                                    );
-                                })}
-                            </ul>
+                            <h3>✅ Action Items</h3>
+                            {answer.actionItems.map((action, index) => (
+                                <div key={index} className="action-item-group">
+                                    <h4>{action.title}</h4>
+                                    <ul>
+                                        {action.details.map((detail, dIndex) => (
+                                            <li key={dIndex}>{detail}</li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
@@ -926,12 +993,6 @@ function BeforeMeetingForm() {
         </div>
     );
 }
-
-
-
-
-
-
 
 
 // --- CaptureIdeaForm (Updated) ---
@@ -1150,14 +1211,16 @@ function QuickCapture({ onMeetingSaved }) {
     );
 }
 function LiveDemo() {
+    // ✅ Re-added conversation state to store the AI's response
     const [conversation, setConversation] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
-    const { isSpeaking, speak, cancel } = useTextToSpeech();
+    const [turnCounter, setTurnCounter] = useState(0);
 
+    const { isListening, transcript, startListening, stopListening, setTranscript } = useSpeechRecognition();
+    const { isSpeaking, speak } = useTextToSpeech();
     const prevIsListening = useRef(false);
 
-    // Auto-submit when user stops speaking
+    // This effect handles submitting your voice input when you stop speaking
     useEffect(() => {
         if (prevIsListening.current && !isListening && transcript.trim()) {
             handleSubmit(transcript);
@@ -1165,58 +1228,52 @@ function LiveDemo() {
         prevIsListening.current = isListening;
     }, [transcript, isListening]);
 
-    // Auto-speak when AI response arrives
+    // ✅ Corrected effect to speak the AI's response
     useEffect(() => {
         const lastMessage = conversation[conversation.length - 1];
-        if (lastMessage && lastMessage.sender === 'ai') {
+        // Check if the last message is from the AI and not currently speaking
+        if (lastMessage && lastMessage.sender === 'ai' && !isSpeaking) {
             speak(lastMessage.text);
         }
-    }, [conversation]);
-
+    }, [conversation]); // This effect now correctly depends on the conversation state
 
     const handleSubmit = async (prompt) => {
         if (!prompt.trim()) return;
 
-        // Add user's message to conversation
-        const userMessage = { sender: 'user', text: prompt };
-        setConversation(prev => [...prev, userMessage]);
+        // We still add the user's prompt to the history for context, even if it's not displayed
+        const userMessage = { sender: "user", text: prompt };
+        setConversation((prev) => [...prev, userMessage]);
 
+        setTranscript("");
         setIsLoading(true);
         try {
-            const { data } = await apiService.getDemoResponse(prompt);
-            const aiMessage = { sender: 'ai', text: data.responseText };
-            setConversation(prev => [...prev, aiMessage]);
+            const { data } = await apiService.getDemoResponse(turnCounter);
+
+            // Add the AI's response to the conversation history, which triggers the speak effect
+            const aiMessage = { sender: "ai", text: data.responseText };
+            setConversation((prev) => [...prev, aiMessage]);
+
+            setTurnCounter(prevTurn => prevTurn + 1);
+
         } catch (err) {
             console.error(err);
-            const errorMessage = { sender: 'ai', text: "Sorry, I encountered an error." };
-            setConversation(prev => [...prev, errorMessage]);
+            const errorMessage = { sender: "ai", text: "Sorry, I encountered an error." };
+            // Add error message to conversation to be spoken
+            setConversation((prev) => [...prev, errorMessage]);
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="view-container">
+        <div className="view-container live-demo-container">
             <div className="dashboard-header">
-                <h1>Live Demo</h1>
-                <p>An interactive, scripted conversation with your AI Assistant.</p>
+                <h1>AI Executive Assistant</h1>
             </div>
 
-            <div className="chat-container">
-                <div className="chat-history">
-                    {conversation.map((msg, index) => (
-                        <div key={index} className={`chat-bubble ${msg.sender}`}>
-                            <div className="chat-avatar">{msg.sender === 'user' ? 'M' : 'AI'}</div>
-                            <div className="chat-text">{msg.text}</div>
-                        </div>
-                    ))}
-                    {isLoading && <div className="chat-bubble ai"><Loader /></div>}
-                </div>
-            </div>
-
-            <div className="quick-capture-layout" style={{ marginTop: '24px' }}>
+            <div className="live-demo-orb-wrapper">
                 <VoiceVisualizer
-                    isListening={isListening}
+                    isListening={isListening || isLoading || isSpeaking}
                     onClick={isListening ? stopListening : startListening}
                 />
             </div>

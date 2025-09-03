@@ -13,6 +13,7 @@ const profileRoutes = require('./routes/profile');
 const insightRoutes = require('./routes/insights');
 const analystRoutes = require('./routes/analyst');
 const demoRoutes = require('./routes/demo');
+const audioRoutes = require('./routes/audio');
 
 // Import middleware
 const { errorHandler } = require('./middleware/auth');
@@ -59,6 +60,7 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/insights', insightRoutes);
 app.use('/api/analyst', analystRoutes);
 app.use('/api/demo', demoRoutes);
+app.use('/api/audio', audioRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
