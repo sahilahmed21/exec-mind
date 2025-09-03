@@ -102,5 +102,8 @@ export default {
     quickCaptureMeeting(rawText) {
         return apiClient.post('/meetings/quick-capture', { rawText });
     },
+    getDemoResponse(prompt) {
+        return apiClient.post('/demo/chat', { prompt });
+    },
 
 };

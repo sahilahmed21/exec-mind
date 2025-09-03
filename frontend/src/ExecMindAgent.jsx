@@ -219,6 +219,7 @@ export function ExecMindAgent({ onLogout }) {
     const renderView = () => {
         switch (currentView) {
             case 'dashboard': return <Dashboard setCurrentView={setCurrentView} />;
+            case 'liveDemo': return <LiveDemo />;
             case 'quickCapture': return <QuickCapture onMeetingSaved={addMeeting} />;
             case 'fridayNotes': return <FridayNotesGenerator meetings={meetings} ideas={ideas} drafts={drafts} />;
             case 'viewDraft': return <ViewDraft draftId={selectedDraftId} onBack={() => setCurrentView('fridayNotes')} />;
@@ -316,6 +317,7 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
     // This component now receives drafts as a prop, no longer fetches its own data
     const shortcuts = [
         { id: 'dashboard', label: 'Dashboard', icon: <HomeIcon /> },
+        { id: 'liveDemo', label: 'Live Demo', icon: '🎙️' },
         { id: 'quickCapture', label: 'Quick Capture', icon: <FlashIcon /> },
         { id: 'beforeMeeting', label: 'Meeting Insights', icon: <BriefingIcon /> },
         { id: 'fridayNotes', label: 'Friday Notes', icon: <NoteIcon /> },
@@ -1144,6 +1146,80 @@ function QuickCapture({ onMeetingSaved }) {
             </div>
 
             <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
+        </div>
+    );
+}
+function LiveDemo() {
+    const [conversation, setConversation] = useState([]);
+    const [isLoading, setIsLoading] = useState(false);
+    const { isListening, transcript, startListening, stopListening } = useSpeechRecognition();
+    const { isSpeaking, speak, cancel } = useTextToSpeech();
+
+    const prevIsListening = useRef(false);
+
+    // Auto-submit when user stops speaking
+    useEffect(() => {
+        if (prevIsListening.current && !isListening && transcript.trim()) {
+            handleSubmit(transcript);
+        }
+        prevIsListening.current = isListening;
+    }, [transcript, isListening]);
+
+    // Auto-speak when AI response arrives
+    useEffect(() => {
+        const lastMessage = conversation[conversation.length - 1];
+        if (lastMessage && lastMessage.sender === 'ai') {
+            speak(lastMessage.text);
+        }
+    }, [conversation]);
+
+
+    const handleSubmit = async (prompt) => {
+        if (!prompt.trim()) return;
+
+        // Add user's message to conversation
+        const userMessage = { sender: 'user', text: prompt };
+        setConversation(prev => [...prev, userMessage]);
+
+        setIsLoading(true);
+        try {
+            const { data } = await apiService.getDemoResponse(prompt);
+            const aiMessage = { sender: 'ai', text: data.responseText };
+            setConversation(prev => [...prev, aiMessage]);
+        } catch (err) {
+            console.error(err);
+            const errorMessage = { sender: 'ai', text: "Sorry, I encountered an error." };
+            setConversation(prev => [...prev, errorMessage]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="view-container">
+            <div className="dashboard-header">
+                <h1>Live Demo</h1>
+                <p>An interactive, scripted conversation with your AI Assistant.</p>
+            </div>
+
+            <div className="chat-container">
+                <div className="chat-history">
+                    {conversation.map((msg, index) => (
+                        <div key={index} className={`chat-bubble ${msg.sender}`}>
+                            <div className="chat-avatar">{msg.sender === 'user' ? 'M' : 'AI'}</div>
+                            <div className="chat-text">{msg.text}</div>
+                        </div>
+                    ))}
+                    {isLoading && <div className="chat-bubble ai"><Loader /></div>}
+                </div>
+            </div>
+
+            <div className="quick-capture-layout" style={{ marginTop: '24px' }}>
+                <VoiceVisualizer
+                    isListening={isListening}
+                    onClick={isListening ? stopListening : startListening}
+                />
+            </div>
         </div>
     );
 }

@@ -6,20 +6,39 @@ const path = require('path');
 
 // --- All Route Imports ---
 const searchRoutes = require('./routes/search');
-const meetingRoutes = require('./routes/meetings'); // CORRECT: Use this
+const meetingRoutes = require('./routes/meetings'); // Corrected import
 const ideaRoutes = require('./routes/ideas');
 const newsletterRoutes = require('./routes/newsletters');
 const profileRoutes = require('./routes/profile');
 const insightRoutes = require('./routes/insights');
 const analystRoutes = require('./routes/analyst');
+const demoRoutes = require('./routes/demo');
 
 // Import middleware
 const { errorHandler } = require('./middleware/auth');
 
+// Initialize the Express app
 const app = express();
 
-// Middleware
-app.use(cors());
+// --- Middleware Configuration ---
+
+// CORS Options
+const allowedOrigins = [
+    'https://execmind-frontend.onrender.com', // Your frontend URL
+    'http://localhost:3001'
+];
+const corsOptions = {
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+};
+app.use(cors(corsOptions)); // Use CORS with options ONCE
+
+// Other Middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
@@ -33,12 +52,13 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/execmind'
 
 // --- Register All Routes ---
 app.use('/api/search', searchRoutes);
-app.use('/api/meetings', meetingRoutes); // CORRECT: Use this
+app.use('/api/meetings', meetingRoutes); // Correctly uses meetingRoutes
 app.use('/api/ideas', ideaRoutes);
 app.use('/api/newsletters', newsletterRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/insights', insightRoutes);
 app.use('/api/analyst', analystRoutes);
+app.use('/api/demo', demoRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
