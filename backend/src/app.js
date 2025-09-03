@@ -25,7 +25,7 @@ const app = express();
 
 // CORS Options
 const allowedOrigins = [
-    'https://execmind-frontend.onrender.com', // Your frontend URL
+    'https://execmind.techxchange.demo.ryzeai.ai', // Your frontend URL
     'http://localhost:3001'
 ];
 const corsOptions = {
