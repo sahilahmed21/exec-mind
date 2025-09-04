@@ -1223,7 +1223,7 @@ function QuickCapture({ onMeetingSaved }) {
                     isListening={isListening}
                     onClick={isListening ? stopListening : startListening}
                 />
-                {/* <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
+                <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
                     <div className="form-group">
                         <textarea
                             className="form-textarea equal-size"
@@ -1235,12 +1235,11 @@ function QuickCapture({ onMeetingSaved }) {
                     <button type="submit" className="btn-primary" disabled={isLoading || !rawText.trim()}>
                         {isLoading ? <Loader /> : 'Capture'}
                     </button>
-                </form> */}
+                </form>
             </div>
 
             <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
 
-            {/* ✅ ADDED THIS ENTIRE "RECENTLY PROCESSED" SECTION
             <div className="recent-ideas-container">
                 <h3 className="sidebar-title">RECENTLY PROCESSED</h3>
                 <div className="sources-list">
@@ -1259,7 +1258,7 @@ function QuickCapture({ onMeetingSaved }) {
                         </div>
                     ))}
                 </div>
-            </div> */}
+            </div>
         </div>
     );
 }
@@ -1495,7 +1494,6 @@ function MarcsIndexCards() {
         {
             title: 'Discuss with Rajesh',
             subtitles: [
-                'His ideas on Ai and philosophy',
                 'Who to meet at techxchange',
                 'Upcoming Dinner at nakazawa New York',
                 <a href="/rajeshandmarc.jpg" target="_blank" style={{ color: '#3b82f6', textDecoration: 'none' }}>Tandem 2026 dates and what dance moves I am going to be doing</a>
@@ -1591,20 +1589,22 @@ function MarcsIndexCards() {
                             }}
                         >
                             <div style={styles.noteContent}>
-                                <div style={styles.noteTitle}>{note.title}</div>
+                                {/* 🔹 Replace title with tags here */}
+                                <div style={{ display: "flex", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                                    {note.tags.map((tag, tagIdx) => (
+                                        <div
+                                            key={tagIdx}
+                                            style={getPillStyle(tag.type, true)}
+                                        >
+                                            {tag.name}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Subtitles remain below */}
                                 {note.subtitles.map((subtitle, subIdx) => (
                                     <div key={subIdx} style={styles.noteSubtitle}>
                                         {subtitle}
-                                    </div>
-                                ))}
-                            </div>
-                            <div style={styles.notePills}>
-                                {note.tags.map((tag, tagIdx) => (
-                                    <div
-                                        key={tagIdx}
-                                        style={getPillStyle(tag.type, true)}
-                                    >
-                                        {tag.name}
                                     </div>
                                 ))}
                             </div>
