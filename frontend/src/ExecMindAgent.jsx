@@ -341,11 +341,11 @@ function Sidebar({ currentView, setCurrentView, onLogout, onViewDraft, drafts, i
             <div>
                 {/* Header */}
                 <div className="sidebar-header">
-                    <div className="brand-logo">EM</div>
+                    {/* <div className="brand-logo">EM</div> */}
                     <div className="brand-text-wrapper">
                         <span className="brand-text">
                             <h2 className="brand-name">ExecMind</h2>
-                            <div className="brand-edition">MarcMind Edition</div>
+                            <div className="brand-edition">Marc Edition</div>
                         </span>
                     </div>
                     {/* Collapse Button (correct placement) */}
@@ -1223,7 +1223,7 @@ function QuickCapture({ onMeetingSaved }) {
                     isListening={isListening}
                     onClick={isListening ? stopListening : startListening}
                 />
-                <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
+                {/* <form ref={formRef} onSubmit={handleSubmit} className="standard-form" style={{ width: '100%' }}>
                     <div className="form-group">
                         <textarea
                             className="form-textarea equal-size"
@@ -1235,12 +1235,12 @@ function QuickCapture({ onMeetingSaved }) {
                     <button type="submit" className="btn-primary" disabled={isLoading || !rawText.trim()}>
                         {isLoading ? <Loader /> : 'Capture'}
                     </button>
-                </form>
+                </form> */}
             </div>
 
             <StateDisplay isLoading={isLoading} error={error} successMessage={successMessage} />
 
-            {/* ✅ ADDED THIS ENTIRE "RECENTLY PROCESSED" SECTION */}
+            {/* ✅ ADDED THIS ENTIRE "RECENTLY PROCESSED" SECTION
             <div className="recent-ideas-container">
                 <h3 className="sidebar-title">RECENTLY PROCESSED</h3>
                 <div className="sources-list">
@@ -1259,7 +1259,7 @@ function QuickCapture({ onMeetingSaved }) {
                         </div>
                     ))}
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 }
@@ -1349,8 +1349,8 @@ function MarcsIndexCards() {
         },
         header: {
             textAlign: 'center',
-            marginBottom: '40px',
-            padding: '40px 0'
+            marginBottom: '20px',
+            padding: '10px 0'
         },
         title: {
             fontSize: '2.5rem',
@@ -1495,9 +1495,10 @@ function MarcsIndexCards() {
         {
             title: 'Discuss with Rajesh',
             subtitles: [
-                'Ask Rajesh about Techxchange',
-                'Confirm Dinner at Indian Restaurant',
-                'Ask him about Tandem dates'
+                'His ideas on Ai and philosophy',
+                'Who to meet at techxchange',
+                'Upcoming Dinner at nakazawa New York',
+                <a href="/rajeshandmarc.jpg" target="_blank" style={{ color: '#3b82f6', textDecoration: 'none' }}>Tandem 2026 dates and what dance moves I am going to be doing</a>
             ],
             tags: [
                 { name: 'Rajesh', type: 'green' },
